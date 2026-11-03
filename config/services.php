@@ -2,6 +2,12 @@
 
 return [
 
+    'career_ai' => [
+        'web_enabled' => (bool) env('CAREER_AI_WEB_ENABLED', false),
+        'demo_login_enabled' => (bool) env('CAREER_AI_DEMO_LOGIN_ENABLED', false),
+        'google_calendar_enabled' => (bool) env('CAREER_AI_GOOGLE_CALENDAR_ENABLED', env('APP_ENV', 'production') === 'local'),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Third Party Services
@@ -33,6 +39,17 @@ return [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
+    ],
+
+    'gemini' => [
+        'api_key' => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL', 'gemini-3.5-flash-lite'),
+    ],
+
+    'google_calendar' => [
+        'client_id' => env('GOOGLE_CALENDAR_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CALENDAR_CLIENT_SECRET'),
+        'redirect_uri' => env('GOOGLE_CALENDAR_REDIRECT_URI', 'http://127.0.0.1:8000/google-calendar/callback'),
     ],
 
 ];
