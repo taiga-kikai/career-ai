@@ -15,6 +15,8 @@ class TransferCareerAiAccount extends Command
 
     private const TARGET_CONNECTION = 'career_ai_transfer';
 
+    private const DEMO_ACCOUNT_EMAIL = 'demo@career-ai.local';
+
     /**
      * @var array<int, string>
      */
@@ -82,25 +84,39 @@ class TransferCareerAiAccount extends Command
             return self::FAILURE;
         }
 
+        $reusedUserIdMap = [];
         foreach ($sourceUsers as $sourceUser) {
-            if ($target->table('users')->where('email', $sourceUser->email)->exists()) {
+            $existingTargetUser = $target->table('users')->where('email', $sourceUser->email)->first();
+            if (! $existingTargetUser) {
+                continue;
+            }
+
+            if ($sourceUser->email !== self::DEMO_ACCOUNT_EMAIL || $this->userHasOwnedData($target, (int) $existingTargetUser->id)) {
                 $this->error('移行先に同じメールアドレスのアカウントがあります。重複防止のため中止しました。: '.$sourceUser->email);
 
                 return self::FAILURE;
             }
+
+            $reusedUserIdMap[(int) $sourceUser->id] = (int) $existingTargetUser->id;
         }
 
         $counts = ['users' => 0];
-        $userIdMap = [];
+        $userIdMap = $reusedUserIdMap;
         $target->transaction(function () use ($source, $target, $sourceUsers, &$counts, &$userIdMap): void {
             foreach ($sourceUsers as $sourceUser) {
-                $userAttributes = array_intersect_key((array) $sourceUser, array_flip(Schema::connection(self::TARGET_CONNECTION)->getColumnListing('users')));
-                unset($userAttributes['id'], $userAttributes['remember_token'], $userAttributes['google_calendar_refresh_token']);
-                $targetUserId = (int) $target->table('users')->insertGetId($userAttributes);
-                $userIdMap[(int) $sourceUser->id] = $targetUserId;
+                $sourceUserId = (int) $sourceUser->id;
+                if (isset($userIdMap[$sourceUserId])) {
+                    $targetUserId = $userIdMap[$sourceUserId];
+                    $counts['reused_users'] = ($counts['reused_users'] ?? 0) + 1;
+                } else {
+                    $userAttributes = array_intersect_key((array) $sourceUser, array_flip(Schema::connection(self::TARGET_CONNECTION)->getColumnListing('users')));
+                    unset($userAttributes['id'], $userAttributes['remember_token'], $userAttributes['google_calendar_refresh_token']);
+                    $targetUserId = (int) $target->table('users')->insertGetId($userAttributes);
+                    $userIdMap[$sourceUserId] = $targetUserId;
+                }
                 $counts['users']++;
 
-                $applicationIdMap = $this->copyApplications($source, $target, (int) $sourceUser->id, $targetUserId);
+                $applicationIdMap = $this->copyApplications($source, $target, $sourceUserId, $targetUserId);
                 $counts['career_applications'] = ($counts['career_applications'] ?? 0) + count($applicationIdMap);
 
                 foreach (array_slice(self::USER_OWNED_TABLES, 1) as $tableName) {
@@ -125,6 +141,18 @@ class TransferCareerAiAccount extends Command
         $this->warn('Googleカレンダーの認証情報は暗号化キーが異なるため移していません。移行後に再連携してください。');
 
         return self::SUCCESS;
+    }
+
+    private function userHasOwnedData(Connection $connection, int $userId): bool
+    {
+        foreach (self::USER_OWNED_TABLES as $tableName) {
+            if ($connection->table($tableName)->where('user_id', $userId)->exists()) {
+                return true;
+            }
+        }
+
+        return Schema::connection(self::TARGET_CONNECTION)->hasTable('user_invitations')
+            && $connection->table('user_invitations')->where('created_by', $userId)->exists();
     }
 
     /**
