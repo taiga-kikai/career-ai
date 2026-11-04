@@ -9,24 +9,56 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('schedule_events', function (Blueprint $table) {
-            $table->string('company_name')->nullable()->after('career_application_id');
-            $table->string('selection_type', 20)->default('main')->after('company_name');
-            $table->string('confirmation_status', 20)->default('planned')->after('selection_type');
-        });
+        $missingColumns = collect(['company_name', 'selection_type', 'confirmation_status'])
+            ->reject(fn (string $column): bool => Schema::hasColumn('schedule_events', $column))
+            ->all();
+
+        if ($missingColumns !== []) {
+            Schema::table('schedule_events', function (Blueprint $table) use ($missingColumns): void {
+                if (in_array('company_name', $missingColumns, true)) {
+                    $table->string('company_name')->nullable();
+                }
+                if (in_array('selection_type', $missingColumns, true)) {
+                    $table->string('selection_type', 20)->default('main');
+                }
+                if (in_array('confirmation_status', $missingColumns, true)) {
+                    $table->string('confirmation_status', 20)->default('planned');
+                }
+            });
+        }
 
         DB::table('schedule_events')
-            ->join('career_applications', 'schedule_events.career_application_id', '=', 'career_applications.id')
-            ->update([
-                'schedule_events.company_name' => DB::raw('career_applications.company'),
-                'schedule_events.selection_type' => DB::raw("CASE WHEN career_applications.category = 'main' THEN 'main' ELSE 'internship' END"),
-            ]);
+            ->whereNotNull('career_application_id')
+            ->orderBy('id')
+            ->get(['id', 'career_application_id', 'company_name'])
+            ->each(function (object $event): void {
+                $application = DB::table('career_applications')
+                    ->where('id', $event->career_application_id)
+                    ->first(['company', 'category']);
+
+                if (! $application) {
+                    return;
+                }
+
+                $updates = [
+                    'selection_type' => $application->category === 'main' ? 'main' : 'internship',
+                ];
+                if ($event->company_name === null) {
+                    $updates['company_name'] = $application->company;
+                }
+
+                DB::table('schedule_events')->where('id', $event->id)->update($updates);
+            });
     }
 
     public function down(): void
     {
-        Schema::table('schedule_events', function (Blueprint $table) {
-            $table->dropColumn(['company_name', 'selection_type', 'confirmation_status']);
-        });
+        $existingColumns = collect(['company_name', 'selection_type', 'confirmation_status'])
+            ->filter(fn (string $column): bool => Schema::hasColumn('schedule_events', $column))
+            ->all();
+
+        if ($existingColumns !== []) {
+            Schema::table('schedule_events', fn (Blueprint $table) => $table->dropColumn($existingColumns));
+        }
     }
 };

@@ -8,15 +8,17 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('schedule_events', function (Blueprint $table) {
-            $table->string('meeting_format', 20)->nullable()->after('title');
-        });
+        if (! Schema::hasColumn('schedule_events', 'meeting_format')) {
+            Schema::table('schedule_events', function (Blueprint $table): void {
+                $table->string('meeting_format', 20)->nullable();
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::table('schedule_events', function (Blueprint $table) {
-            $table->dropColumn('meeting_format');
-        });
+        if (Schema::hasColumn('schedule_events', 'meeting_format')) {
+            Schema::table('schedule_events', fn (Blueprint $table) => $table->dropColumn('meeting_format'));
+        }
     }
 };

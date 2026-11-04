@@ -11,13 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table): void {
-            $table->text('google_calendar_refresh_token')->nullable();
-        });
+        if (! Schema::hasColumn('users', 'google_calendar_refresh_token')) {
+            Schema::table('users', function (Blueprint $table): void {
+                $table->text('google_calendar_refresh_token')->nullable();
+            });
+        }
 
-        Schema::table('schedule_events', function (Blueprint $table): void {
-            $table->string('google_calendar_event_id')->nullable();
-        });
+        if (! Schema::hasColumn('schedule_events', 'google_calendar_event_id')) {
+            Schema::table('schedule_events', function (Blueprint $table): void {
+                $table->string('google_calendar_event_id')->nullable();
+            });
+        }
     }
 
     /**
@@ -25,12 +29,12 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('schedule_events', function (Blueprint $table): void {
-            $table->dropColumn('google_calendar_event_id');
-        });
+        if (Schema::hasColumn('schedule_events', 'google_calendar_event_id')) {
+            Schema::table('schedule_events', fn (Blueprint $table) => $table->dropColumn('google_calendar_event_id'));
+        }
 
-        Schema::table('users', function (Blueprint $table): void {
-            $table->dropColumn('google_calendar_refresh_token');
-        });
+        if (Schema::hasColumn('users', 'google_calendar_refresh_token')) {
+            Schema::table('users', fn (Blueprint $table) => $table->dropColumn('google_calendar_refresh_token'));
+        }
     }
 };
