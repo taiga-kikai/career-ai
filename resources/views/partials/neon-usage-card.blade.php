@@ -44,15 +44,18 @@
                             CU時間
                         @endif
                     </p>
-                @elseif ($neonUsage['compute_status'] === 'free_unavailable')
-                    <p class="text-xs font-semibold text-[#80684f]">Free · 100 CU時間/月</p>
+                @elseif ($neonUsage['compute_status'] === 'estimated')
+                    <p class="text-xs font-semibold text-[#a66c48]">推定 · Free 100 CU時間/月</p>
                 @endif
             </div>
-            @if ($neonUsage['compute_status'] === 'available' && $neonUsage['compute_limit_cu_hours'] !== null)
-                <div class="mt-2 h-2 overflow-hidden rounded-full bg-[#e8ddce]" role="progressbar" aria-label="今月のCU使用量" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ min(100, ($neonUsage['compute_used_cu_hours'] / max(1, $neonUsage['compute_limit_cu_hours'])) * 100) }}">
-                    <div class="h-full rounded-full bg-[#d7784e] transition-all" style="width: {{ min(100, ($neonUsage['compute_used_cu_hours'] / max(1, $neonUsage['compute_limit_cu_hours'])) * 100) }}%"></div>
+            @if (in_array($neonUsage['compute_status'], ['available', 'estimated'], true) && $neonUsage['compute_limit_cu_hours'] !== null)
+                <div class="mt-2 h-2 overflow-hidden rounded-full bg-[#e8ddce]" role="progressbar" aria-label="今月のCU使用量" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ $neonUsage['compute_percent'] ?? min(100, ($neonUsage['compute_used_cu_hours'] / max(1, $neonUsage['compute_limit_cu_hours'])) * 100) }}">
+                    <div class="h-full rounded-full {{ $neonUsage['compute_status'] === 'estimated' ? 'bg-[#d9a35c]' : 'bg-[#d7784e]' }} transition-all" style="width: {{ $neonUsage['compute_percent'] ?? min(100, ($neonUsage['compute_used_cu_hours'] / max(1, $neonUsage['compute_limit_cu_hours'])) * 100) }}%"></div>
                 </div>
                 <p class="mt-2 text-[11px] text-[#80684f]">残り {{ number_format($neonUsage['compute_remaining_cu_hours'], 2) }} CU時間 · 0.25 CU換算で約{{ number_format($neonUsage['estimated_active_hours_remaining'], 1) }}時間</p>
+                @if ($neonUsage['compute_status'] === 'estimated')
+                    <p class="mt-1 text-[10px] leading-4 text-[#a28c73]">推定使用 {{ number_format($neonUsage['compute_used_cu_hours'], 2) }} CU時間 · 接続時刻と自動停止までの時間から算出</p>
+                @endif
             @else
                 <p class="mt-2 text-[11px] leading-5 text-[#80684f]">{{ $neonUsage['message'] }}</p>
             @endif
@@ -62,6 +65,8 @@
     <p class="mt-3 text-[10px] leading-4 text-[#95816c]">保存量はDB内部の論理容量の目安です。保存量を減らしてもCU時間は直接増えず、CUはDBの処理時間と大きさで消費されます。</p>
     @if ($neonUsage['compute_status'] === 'available')
         <p class="mt-1 text-[10px] text-[#a28c73]">CU実績は約15分間隔で更新 · {{ $neonUsage['updated_at']->timezone('Asia/Tokyo')->format('H:i') }}取得</p>
+    @elseif ($neonUsage['compute_status'] === 'estimated')
+        <p class="mt-1 text-[10px] leading-4 text-[#a28c73]">Career AI経由の接続のみを{{ number_format($neonUsage['estimated_cu_assumption'], 2) }} CU・自動停止{{ (int) config('services.neon.estimated_suspend_seconds', 300) }}秒の仮定で推定。Neon管理画面の実測値を優先してください。</p>
     @endif
     <a href="{{ $neonUsage['console_url'] }}" target="_blank" rel="noopener noreferrer" class="mt-3 inline-flex rounded-xl border border-[#eadfce] bg-white px-3 py-2 text-xs font-semibold text-[#80684f] hover:bg-[#f8efdf]">Neon管理画面で確認・変更 →</a>
 </section>

@@ -46,6 +46,10 @@ services:
         value: 1073741824
       - key: NEON_MONTHLY_CU_LIMIT
         value: 100
+      - key: NEON_ESTIMATED_MIN_CU
+        value: 0.25
+      - key: NEON_ESTIMATED_SUSPEND_SECONDS
+        value: 300
       - key: SESSION_DRIVER
         value: file
       - key: SESSION_SECURE_COOKIE

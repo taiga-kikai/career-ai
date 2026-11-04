@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.12
+
+- Neon FreeのCU実績APIが使えない場合も、Career AI経由のDB接続時間からCU残数の推定ゲージを表示
+- 推定条件（最小CU、自動停止時間）と実測ではない旨を画面に明記
+
 ## v1.11
 
 - Render公開アプリでGoogle Calendar連携を有効化できるBlueprint設定を追加

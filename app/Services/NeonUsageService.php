@@ -73,7 +73,15 @@ class NeonUsageService
         }
 
         if ($plan === 'free') {
-            $usage['message'] = 'FreeプランではNeonの使用量APIが利用できないため、CU使用量はNeon管理画面で確認してください。';
+            $estimate = app(NeonActivityEstimateService::class)->currentMonthEstimate((float) $usage['compute_limit_cu_hours']);
+            $usage['compute_status'] = 'estimated';
+            $usage['compute_used_cu_hours'] = $estimate['used_cu_hours'];
+            $usage['compute_remaining_cu_hours'] = $estimate['remaining_cu_hours'];
+            $usage['compute_percent'] = $estimate['percent'];
+            $usage['estimated_active_hours_remaining'] = $estimate['active_hours_remaining'];
+            $usage['estimated_cu_assumption'] = max(0.01, (float) config('services.neon.estimated_min_cu', 0.25));
+            $usage['activity_updated_at'] = $estimate['updated_at'];
+            $usage['message'] = '推定値です。Career AIからNeonへ接続した時間を、最小CU設定を仮定して計算しています。Neon管理画面や他の接続からの利用は含みません。';
 
             return $usage;
         }

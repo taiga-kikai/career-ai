@@ -56,6 +56,8 @@ return [
         'plan' => env('NEON_PLAN', 'free'),
         'storage_limit_bytes' => env('NEON_STORAGE_LIMIT_BYTES', 1073741824),
         'monthly_cu_limit' => env('NEON_MONTHLY_CU_LIMIT', 100),
+        'estimated_min_cu' => env('NEON_ESTIMATED_MIN_CU', 0.25),
+        'estimated_suspend_seconds' => env('NEON_ESTIMATED_SUSPEND_SECONDS', 300),
         'api_key' => env('NEON_API_KEY'),
         'org_id' => env('NEON_ORG_ID'),
         'project_id' => env('NEON_PROJECT_ID'),
