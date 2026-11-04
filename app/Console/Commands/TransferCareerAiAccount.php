@@ -9,9 +9,9 @@ use Illuminate\Support\Facades\Schema;
 
 class TransferCareerAiAccount extends Command
 {
-    protected $signature = 'career-ai:transfer-account {email : Email address of the local account to transfer}';
+    protected $signature = 'career-ai:transfer-account {email? : Email address of the local account to transfer} {--all-users : Transfer every local account and its owned career data}';
 
-    protected $description = 'Copy one local MySQL account and its private career data to PostgreSQL';
+    protected $description = 'Copy local MySQL accounts and their private career data to PostgreSQL';
 
     private const TARGET_CONNECTION = 'career_ai_transfer';
 
@@ -32,7 +32,6 @@ class TransferCareerAiAccount extends Command
     {
         $source = DB::connection();
         $target = DB::connection(self::TARGET_CONNECTION);
-        $email = mb_strtolower((string) $this->argument('email'));
 
         if ($source->getDriverName() !== 'mysql') {
             $this->error('移行元のDB_CONNECTIONをmysqlにしてください。');
@@ -47,7 +46,7 @@ class TransferCareerAiAccount extends Command
         }
 
         if ($target->getDriverName() !== 'pgsql' || ! Schema::connection(self::TARGET_CONNECTION)->hasTable('migrations')) {
-            $this->error('移行先PostgreSQLにアプリのテーブルがありません。RenderでDB接続後、マイグレーションが完了してから実行してください。');
+            $this->error('移行先PostgreSQLにアプリのテーブルがありません。先に career_ai_transfer 接続へマイグレーションを実行してください。');
 
             return self::FAILURE;
         }
@@ -55,43 +54,68 @@ class TransferCareerAiAccount extends Command
         $targetSchema = Schema::connection(self::TARGET_CONNECTION);
         foreach (['users', ...self::USER_OWNED_TABLES] as $tableName) {
             if (! $targetSchema->hasTable($tableName)) {
-                $this->error('移行先のテーブルが不足しています。Renderのマイグレーション完了後に再実行してください。');
+                $this->error('移行先のテーブルが不足しています。先に career_ai_transfer 接続へマイグレーションを実行してください。');
 
                 return self::FAILURE;
             }
         }
-        $sourceUser = $source->table('users')->where('email', $email)->first();
-        if (! $sourceUser) {
-            $this->error('ローカルMySQLに指定アカウントが見つかりません。');
+        $email = mb_strtolower((string) $this->argument('email'));
+        if ($this->option('all-users') && $email !== '') {
+            $this->error('全アカウント移行とメールアドレス指定は同時に使えません。');
 
             return self::FAILURE;
         }
 
-        if ($target->table('users')->where('email', $email)->exists()) {
-            $this->error('移行先に同じメールアドレスのアカウントがあります。重複防止のため中止しました。');
+        if (! $this->option('all-users') && $email === '') {
+            $this->error('移行するメールアドレスを指定するか、--all-users を付けてください。');
 
             return self::FAILURE;
         }
 
-        $counts = [];
-        $target->transaction(function () use ($source, $target, $sourceUser, &$counts): void {
-            $userAttributes = (array) $sourceUser;
-            unset($userAttributes['id'], $userAttributes['remember_token'], $userAttributes['google_calendar_refresh_token']);
-            $targetUserId = $target->table('users')->insertGetId($userAttributes);
+        $sourceUsers = $this->option('all-users')
+            ? $source->table('users')->orderBy('id')->get()
+            : $source->table('users')->where('email', $email)->get();
 
-            $applicationIdMap = $this->copyApplications($source, $target, (int) $sourceUser->id, (int) $targetUserId);
-            $counts['career_applications'] = count($applicationIdMap);
+        if ($sourceUsers->isEmpty()) {
+            $this->error($this->option('all-users') ? 'ローカルMySQLにアカウントがありません。' : 'ローカルMySQLに指定アカウントが見つかりません。');
 
-            foreach (array_slice(self::USER_OWNED_TABLES, 1) as $tableName) {
-                $counts[$tableName] = $this->copyOwnedRows(
-                    $source,
-                    $target,
-                    $tableName,
-                    (int) $sourceUser->id,
-                    (int) $targetUserId,
-                    $applicationIdMap,
-                );
+            return self::FAILURE;
+        }
+
+        foreach ($sourceUsers as $sourceUser) {
+            if ($target->table('users')->where('email', $sourceUser->email)->exists()) {
+                $this->error('移行先に同じメールアドレスのアカウントがあります。重複防止のため中止しました。: '.$sourceUser->email);
+
+                return self::FAILURE;
             }
+        }
+
+        $counts = ['users' => 0];
+        $userIdMap = [];
+        $target->transaction(function () use ($source, $target, $sourceUsers, &$counts, &$userIdMap): void {
+            foreach ($sourceUsers as $sourceUser) {
+                $userAttributes = array_intersect_key((array) $sourceUser, array_flip(Schema::connection(self::TARGET_CONNECTION)->getColumnListing('users')));
+                unset($userAttributes['id'], $userAttributes['remember_token'], $userAttributes['google_calendar_refresh_token']);
+                $targetUserId = (int) $target->table('users')->insertGetId($userAttributes);
+                $userIdMap[(int) $sourceUser->id] = $targetUserId;
+                $counts['users']++;
+
+                $applicationIdMap = $this->copyApplications($source, $target, (int) $sourceUser->id, $targetUserId);
+                $counts['career_applications'] = ($counts['career_applications'] ?? 0) + count($applicationIdMap);
+
+                foreach (array_slice(self::USER_OWNED_TABLES, 1) as $tableName) {
+                    $counts[$tableName] = ($counts[$tableName] ?? 0) + $this->copyOwnedRows(
+                        $source,
+                        $target,
+                        $tableName,
+                        (int) $sourceUser->id,
+                        $targetUserId,
+                        $applicationIdMap,
+                    );
+                }
+            }
+
+            $counts['user_invitations'] = $this->copyInvitations($source, $target, $userIdMap);
         });
 
         $this->info('アカウントと紐づくデータをPostgreSQLへ移しました。');
@@ -101,6 +125,31 @@ class TransferCareerAiAccount extends Command
         $this->warn('Googleカレンダーの認証情報は暗号化キーが異なるため移していません。移行後に再連携してください。');
 
         return self::SUCCESS;
+    }
+
+    /**
+     * @param  array<int, int>  $userIdMap
+     */
+    private function copyInvitations(Connection $source, Connection $target, array $userIdMap): int
+    {
+        $sourceSchema = Schema::connection($source->getName());
+        $targetSchema = Schema::connection(self::TARGET_CONNECTION);
+
+        if (! $sourceSchema->hasTable('user_invitations') || ! $targetSchema->hasTable('user_invitations')) {
+            return 0;
+        }
+
+        $targetColumns = $targetSchema->getColumnListing('user_invitations');
+        $sourceRows = $source->table('user_invitations')->whereIn('created_by', array_keys($userIdMap))->orderBy('id')->get();
+
+        foreach ($sourceRows as $sourceRow) {
+            $attributes = array_intersect_key((array) $sourceRow, array_flip($targetColumns));
+            unset($attributes['id']);
+            $attributes['created_by'] = $userIdMap[(int) $sourceRow->created_by];
+            $target->table('user_invitations')->insert($attributes);
+        }
+
+        return $sourceRows->count();
     }
 
     /**

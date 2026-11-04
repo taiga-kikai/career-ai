@@ -30,17 +30,17 @@ php artisan serve
 
 無料サービスはアクセスがないと停止し、次回表示時に起動待ちが発生します。初期設定では一時SQLiteを使うため、再起動・再デプロイでデータが消える可能性があります。個人データを長期保存する場合はNeonなど外部PostgreSQLを用意し、Renderの DB_URL に秘密情報として設定してください。無料プランには容量・利用量の上限やバックアップ条件があるため、重要データは別途定期保存してください。
 
-## 個人アカウントの一回移行（MySQLからPostgreSQL）
+## ローカルMySQLからPostgreSQLへの一回移行
 
-Renderの DB_URL に移行先PostgreSQLのURLを設定してデプロイし、アプリのマイグレーションが完了した後、ローカルの .env に CAREER_AI_TRANSFER_DB_URL を一時設定します。接続先は移行先Render DBと同じURLです。設定後に php artisan config:clear を実行し、次のコマンドで本人アカウントと紐づくデータだけをコピーします。
+先にPostgreSQLの接続先URLをローカルの `.env` に `CAREER_AI_TRANSFER_DB_URL` として設定します。既存の `DB_CONNECTION=mysql` は変更しません。接続先URLをGitHubやチャットへ貼らないでください。設定後に以下を実行します。
 
 ~~~powershell
-php artisan career-ai:transfer-account your-email@example.com
+php artisan config:clear
+php artisan migrate --database=career_ai_transfer
+php artisan career-ai:transfer-account --all-users
 ~~~
 
-移行先に同じメールアドレスがある場合は重複を防ぐため中止します。デモ用アカウントはコピーしません。Google Calendarの暗号化認証情報と予定のGoogleイベントIDは移さないため、移行後にGoogle Calendarを再連携してください。移行後は .env から一時URLを削除し、RenderのDB接続URLを外部PostgreSQLの管理画面で再発行・変更することを推奨します。接続URLをGitHubやチャットへ貼らないでください。
-
-
+移行先に同じメールアドレスのアカウントが1件でも存在する場合は、重複を防ぐためコピー全体を中止します。全ユーザーと紐づく就活データ、招待情報をコピーします。パスワードハッシュは引き継ぎますが、ログインセッション、Remember token、Google Calendarの暗号化認証情報、予定のGoogleイベントIDは移しません。Google Calendarは移行後に再連携してください。件数を確認し、移行が終わったらローカル `.env` の一時URLを削除し、Renderの `DB_URL` を同じPostgreSQLに設定します。
 ## Neon利用状況カード
 
 ホームの利用状況カードは、CAREER_AI_OWNER_EMAILに設定したアカウントだけに表示されます。保存量はPostgreSQLへ接続中にページを開くか「更新」を押すと取得します。FreeプランではNeonのCU消費量APIが利用できないため、CUの実数はNeon管理画面で確認します。有料プランでは必要に応じてRenderの環境変数NEON_API_KEY、NEON_ORG_ID、NEON_PROJECT_IDを設定すると、Neon APIからCU実績を読み込みます（約15分間隔）。これらは秘密情報なのでGitHubへ登録しません。
@@ -49,4 +49,4 @@ FreeプランではCU実績をAPIから取得できないため、アプリ内�
 
 ## バージョン
 
-リリースはGitタグで管理します。初回公開版は `v1.00`、SQLiteの移行修正版は `v1.01`、Renderヘルスチェック修正版は `v1.02`、Renderの暗号化キー修正版は `v1.03`、公開デモURLをREADMEに追加した版は `v1.04`、RenderのHTTPS表示・ログイン送信修正版は `v1.05`、Renderから外部PostgreSQLへ接続する対応版は `v1.06`、本人アカウントのデータ移行コマンドを追加した版は v1.07、ホームのNeon利用状況カードを追加した版は v1.08 です。今後も変更内容を記録してタグを追加します。
+リリースはGitタグで管理します。初回公開版は `v1.00`、SQLiteの移行修正版は `v1.01`、Renderヘルスチェック修正版は `v1.02`、Renderの暗号化キー修正版は `v1.03`、公開デモURLをREADMEに追加した版は `v1.04`、RenderのHTTPS表示・ログイン送信修正版は `v1.05`、Renderから外部PostgreSQLへ接続する対応版は `v1.06`、本人アカウントのデータ移行コマンドを追加した版は v1.07、ホームのNeon利用状況カードを追加した版は `v1.08`、ローカルMySQLから全アカウントをNeonへ移行できるようにした版は `v1.09` です。今後も変更内容を記録してタグを追加します。
