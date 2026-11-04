@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.02
+
+- RenderのヘルスチェックをLaravel標準の`/up`へ変更
+- RenderでLaravelのエラーをRuntime Logsへ出力
+
 ## v1.01
 
 - SQLiteで途中失敗したスケジュール移行を安全に再実行できるよう修正

@@ -5,7 +5,7 @@ services:
     plan: free
     region: singapore
     dockerfilePath: ./Dockerfile
-    healthCheckPath: /
+    healthCheckPath: /up
     envVars:
       - key: APP_NAME
         value: Career AI
@@ -36,6 +36,8 @@ services:
         value: sync
       - key: LOG_LEVEL
         value: warning
+      - key: LOG_CHANNEL
+        value: stderr
       - key: GEMINI_API_KEY
         sync: false
       - key: GEMINI_MODEL
