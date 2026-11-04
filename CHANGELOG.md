@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.05
+
+- 公開環境で生成する画面・フォームのURLをHTTPSに統一
+- 公開環境のセッションCookieをHTTPS専用に設定
+
 ## v1.04
 
 - READMEにRender公開デモのURLを追加
