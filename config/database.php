@@ -99,6 +99,21 @@ return [
             'sslmode' => env('DB_SSLMODE', 'prefer'),
         ],
 
+        'career_ai_transfer' => [
+            'driver' => 'pgsql',
+            'url' => env('CAREER_AI_TRANSFER_DB_URL'),
+            'host' => env('CAREER_AI_TRANSFER_DB_HOST', '127.0.0.1'),
+            'port' => env('CAREER_AI_TRANSFER_DB_PORT', '5432'),
+            'database' => env('CAREER_AI_TRANSFER_DB_DATABASE', 'postgres'),
+            'username' => env('CAREER_AI_TRANSFER_DB_USERNAME', 'postgres'),
+            'password' => env('CAREER_AI_TRANSFER_DB_PASSWORD', ''),
+            'charset' => 'utf8',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => env('CAREER_AI_TRANSFER_DB_SSLMODE', 'require'),
+        ],
+
         'sqlsrv' => [
             'driver' => 'sqlsrv',
             'url' => env('DB_URL'),

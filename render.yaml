@@ -30,6 +30,8 @@ services:
         value: /tmp/career-ai.sqlite
       - key: DB_SSLMODE
         value: require
+      - key: DB_URL
+        sync: false
       - key: SESSION_DRIVER
         value: file
       - key: SESSION_SECURE_COOKIE

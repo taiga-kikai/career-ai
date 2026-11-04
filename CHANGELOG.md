@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.07
+
+- ローカルMySQLからPostgreSQLへ本人アカウントと紐づく就活データを移すコマンドを追加
+- Googleカレンダー認証情報は暗号鍵の違いを考慮して移行対象から除外
+
 ## v1.06
 
 - Render起動時に外部PostgreSQLの`DB_URL`があれば接続するよう対応
