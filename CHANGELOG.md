@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.03
+
+- Renderが自動生成するBase64形式の`APP_KEY`をLaravel向けに正規化
+- `APP_KEY`未設定時に起動ログへ明確なエラーを出す
+
 ## v1.02
 
 - RenderのヘルスチェックをLaravel標準の`/up`へ変更

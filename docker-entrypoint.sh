@@ -1,6 +1,15 @@
 #!/bin/sh
 set -eu
 PORT="${PORT:-10000}"
+if [ -z "${APP_KEY:-}" ]; then
+    echo "APP_KEY is required to start the application." >&2
+    exit 1
+fi
+case "$APP_KEY" in
+    base64:*) ;;
+    *) APP_KEY="base64:${APP_KEY}" ;;
+esac
+export APP_KEY
 sed -ri "s/Listen 80/Listen ${PORT}/" /etc/apache2/ports.conf
 sed -ri "s/:80>/:${PORT}>/" /etc/apache2/sites-available/000-default.conf
 mkdir -p /tmp
