@@ -25,7 +25,13 @@ services:
       - key: CAREER_AI_DEMO_LOGIN_ENABLED
         value: "true"
       - key: CAREER_AI_GOOGLE_CALENDAR_ENABLED
-        value: "false"
+        value: "true"
+      - key: GOOGLE_CALENDAR_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CALENDAR_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_CALENDAR_REDIRECT_URI
+        value: https://career-ai-taiga-demo.onrender.com/google-calendar/callback
       - key: DB_DATABASE
         value: /tmp/career-ai.sqlite
       - key: DB_SSLMODE

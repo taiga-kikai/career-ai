@@ -15,6 +15,7 @@ class GoogleCalendarController extends Controller
     public function connect(Request $request, GoogleCalendarService $calendar): RedirectResponse
     {
         $this->ensureLocalPreview();
+        $this->ensureCalendarAccess($request);
 
         if (! $calendar->isConfigured()) {
             return to_route('schedule.index')->with('schedule_saved', 'Googleカレンダーの認証設定がまだ完了していません。');
@@ -36,6 +37,7 @@ class GoogleCalendarController extends Controller
     public function callback(Request $request, GoogleCalendarService $calendar): RedirectResponse
     {
         $this->ensureLocalPreview();
+        $this->ensureCalendarAccess($request);
         $expectedState = $request->session()->pull('google_calendar_oauth_state');
         $receivedState = $request->query('state');
 
@@ -86,6 +88,7 @@ class GoogleCalendarController extends Controller
     public function disconnect(Request $request, GoogleCalendarService $calendar): RedirectResponse
     {
         $this->ensureLocalPreview();
+        $this->ensureCalendarAccess($request);
         /** @var User $user */
         $user = $request->user();
 
@@ -101,6 +104,7 @@ class GoogleCalendarController extends Controller
     public function storeEvent(Request $request, ScheduleEvent $event, GoogleCalendarService $calendar): RedirectResponse
     {
         $this->ensureLocalPreview();
+        $this->ensureCalendarAccess($request);
         /** @var User $user */
         $user = $request->user();
         $event = ScheduleEvent::query()
@@ -127,5 +131,10 @@ class GoogleCalendarController extends Controller
     private function ensureLocalPreview(): void
     {
         abort_unless(app()->environment('local') || config('services.career_ai.google_calendar_enabled'), 404);
+    }
+
+    private function ensureCalendarAccess(Request $request): void
+    {
+        abort_unless($request->user()->email !== 'demo@career-ai.local', 403, '共有デモアカウントではGoogleカレンダーを連携できません。個人アカウントでログインしてください。');
     }
 }

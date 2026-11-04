@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.11
+
+- Render公開アプリでGoogle Calendar連携を有効化できるBlueprint設定を追加
+- Google OAuthのClient IDとSecretをRenderの秘密環境変数として登録する設定を追加
+- OAuthコールバックURLを公開アプリのURLに設定
+- 共有デモアカウントから個人Google Calendarへ誤接続しないよう制限
+
 ## v1.10
 
 - Neonのマイグレーションが先に作る空のデモアカウントを再利用して、ローカルのデモデータを移行できるように修正
