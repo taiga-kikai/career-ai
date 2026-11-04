@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.04
+
+- READMEにRender公開デモのURLを追加
+
 ## v1.03
 
 - Renderが自動生成するBase64形式の`APP_KEY`をLaravel向けに正規化
