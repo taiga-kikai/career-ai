@@ -32,6 +32,14 @@ services:
         value: require
       - key: DB_URL
         sync: false
+      - key: CAREER_AI_OWNER_EMAIL
+        sync: false
+      - key: NEON_PLAN
+        value: free
+      - key: NEON_STORAGE_LIMIT_BYTES
+        value: 1073741824
+      - key: NEON_MONTHLY_CU_LIMIT
+        value: 100
       - key: SESSION_DRIVER
         value: file
       - key: SESSION_SECURE_COOKIE

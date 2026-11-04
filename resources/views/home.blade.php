@@ -6,10 +6,13 @@
     $labels = ['main' => '本選考', 'summer' => '夏インターン', 'autumn' => '秋・冬インターン'];
     $colors = ['main' => 'text-[#98553c]', 'summer' => 'text-[#9d7c42]', 'autumn' => 'text-[#55724f]'];
 @endphp
-<section class="relative mb-6 overflow-hidden rounded-[1.75rem] border border-[#ebdcc6] bg-[#fffaf3] px-5 py-6 sm:px-8 sm:py-8">
-    <div class="relative z-10 max-w-2xl"><p class="text-[11px] font-semibold tracking-[0.16em] text-[#a66c48]">{{ now()->locale('ja')->isoFormat('M月D日（ddd）') }} <span class="mx-1">/</span> CAREER AI</p><h1 class="mt-3 text-2xl font-semibold sm:text-3xl">今日も、一歩ずつ。</h1><p class="mt-2 text-sm leading-6 text-[#80684f]">応募状況や書類、これからの予定をまとめました。</p></div>
-    <img src="{{ asset('images/career-ai-meerkat-walk.png') }}" alt="" class="pointer-events-none absolute -bottom-3 right-4 h-36 w-28 object-contain sm:right-10 sm:h-44">
-</section>
+<div class="mb-6 grid items-stretch gap-4 xl:grid-cols-[minmax(0,1.55fr)_minmax(350px,1fr)]">
+    <section class="relative min-h-40 overflow-hidden rounded-[1.75rem] border border-[#ebdcc6] bg-[#fffaf3] px-5 py-6 sm:px-8 sm:py-8">
+        <div class="relative z-10 max-w-2xl"><p class="text-[11px] font-semibold tracking-[0.16em] text-[#a66c48]">{{ now()->locale('ja')->isoFormat('M月D日（ddd）') }} <span class="mx-1">/</span> CAREER AI</p><h1 class="mt-3 text-2xl font-semibold sm:text-3xl">今日も、一歩ずつ。</h1><p class="mt-2 text-sm leading-6 text-[#80684f]">応募状況や書類、これからの予定をまとめました。</p></div>
+        <img src="{{ asset('images/career-ai-meerkat-walk.png') }}" alt="" class="pointer-events-none absolute -bottom-3 right-4 h-36 w-28 object-contain sm:right-10 sm:h-44">
+    </section>
+    @include('partials.neon-usage-card')
+</div>
 
 <section class="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
     @foreach (['main','summer','autumn'] as $category)

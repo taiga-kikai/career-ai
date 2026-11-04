@@ -4,11 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\CareerApplication;
 use App\Models\ScheduleEvent;
+use App\Services\NeonUsageService;
 use Illuminate\Contracts\View\View;
 
 class HomeController extends Controller
 {
-    public function __invoke(): View
+    public function __invoke(NeonUsageService $neonUsage): View
     {
         $applications = CareerApplication::query()->withCount(['documents', 'research'])->get();
         $categoryCounts = $applications->countBy('category');
@@ -31,6 +32,7 @@ class HomeController extends Controller
             'researchCount' => $applications->filter(fn (CareerApplication $application): bool => $application->research_count > 0)->count(),
             'totalApplications' => $applications->count(),
             'preparedDocuments' => $applications->sum('documents_count'),
+            'neonUsage' => $neonUsage->forUser(auth()->user()),
         ]);
     }
 }

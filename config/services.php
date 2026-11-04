@@ -51,5 +51,14 @@ return [
         'client_secret' => env('GOOGLE_CALENDAR_CLIENT_SECRET'),
         'redirect_uri' => env('GOOGLE_CALENDAR_REDIRECT_URI', 'http://127.0.0.1:8000/google-calendar/callback'),
     ],
+    'neon' => [
+        'owner_email' => env('CAREER_AI_OWNER_EMAIL'),
+        'plan' => env('NEON_PLAN', 'free'),
+        'storage_limit_bytes' => env('NEON_STORAGE_LIMIT_BYTES', 1073741824),
+        'monthly_cu_limit' => env('NEON_MONTHLY_CU_LIMIT', 100),
+        'api_key' => env('NEON_API_KEY'),
+        'org_id' => env('NEON_ORG_ID'),
+        'project_id' => env('NEON_PROJECT_ID'),
+    ],
 
 ];
