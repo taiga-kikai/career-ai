@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.06
+
+- Render起動時に外部PostgreSQLの`DB_URL`があれば接続するよう対応
+- DockerイメージにPostgreSQL用PDOドライバーを追加
+- 外部DBを使わない既存RenderデモはSQLiteのまま動作
+
 ## v1.05
 
 - 公開環境で生成する画面・フォームのURLをHTTPSに統一
