@@ -11,42 +11,7 @@
     <div class="flex flex-wrap items-center justify-between gap-3 border-b border-[#eee3d4] px-5 py-4 sm:px-6"><a href="{{ route('schedule.index', ['month' => $previousMonth]) }}" aria-label="前の月" class="grid size-10 place-items-center rounded-xl border border-[#e8ddce] text-lg hover:bg-[#f7efe3]">←</a><h2 class="text-xl font-semibold">{{ $month->format('Y年n月') }}</h2><a href="{{ route('schedule.index', ['month' => $nextMonth]) }}" aria-label="次の月" class="grid size-10 place-items-center rounded-xl border border-[#e8ddce] text-lg hover:bg-[#f7efe3]">→</a></div>
     <div class="hidden sm:block">
         <div class="grid grid-cols-7 border-b border-[#eee3d4] bg-[#f8f1e7] text-center text-[10px] font-semibold text-[#80684f] sm:text-xs">@foreach (['月', '火', '水', '木', '金', '土', '日'] as $weekday)<div class="py-3">{{ $weekday }}</div>@endforeach</div>
-        @foreach ($weeks as $week)
-            <div class="relative grid grid-cols-7" style="min-height: {{ $week['height'] }}px; grid-template-columns: repeat(7, minmax(0, 1fr))">
-                @foreach ($week['days'] as $day)
-                    @php($dateKey = $day->format('Y-m-d'))
-                    @php($dayEvents = $eventsByDay->get($dateKey, collect()))
-                    @php($occupiedLanes = $week['occupiedLanes'][$dateKey] ?? 0)
-                    <div class="min-h-24 border-b border-r border-[#eee3d4] p-1.5 sm:min-h-32 sm:p-2.5 {{ $day->month === $month->month ? 'bg-[#fffaf3]' : 'bg-[#faf6ef] text-[#b5a58e]' }}">
-                        <a href="{{ route('schedule.create', ['date' => $dateKey]) }}" class="inline-grid size-7 place-items-center rounded-full text-xs font-semibold hover:bg-[#f3e5cf] {{ $day->isToday() ? 'bg-[#31574a] text-white hover:bg-[#25483d]' : '' }}">{{ $day->day }}</a>
-                        <div class="space-y-1" style="margin-top: {{ 4 + 30 * $occupiedLanes }}px">
-                            @foreach ($dayEvents->take(2) as $event)
-                                <a href="{{ route('schedule.edit', $event) }}" class="block overflow-hidden rounded-md border px-1.5 py-1 text-[9px] font-semibold leading-tight {{ $isDeadline($event) ? $deadlineColor : ($statusColors[$event->confirmation_status] ?? $statusColors['planned']) }} sm:text-[10px]">
-                                    <span class="block whitespace-nowrap">{{ $isDeadline($event) ? '~'.$event->starts_at->timezone('Asia/Tokyo')->format('H:i') : $event->starts_at->timezone('Asia/Tokyo')->format('H:i').($event->ends_at ? '-'.$event->ends_at->timezone('Asia/Tokyo')->format('H:i') : '') }}</span>
-                                    <span class="block truncate">{{ $typeNames[$event->event_type] ?? '' }}@if ($event->title && $event->title !== ($typeNames[$event->event_type] ?? ''))（{{ $event->title }}）@endif {{ $event->company_name ?: '' }}</span>
-                                </a>
-                            @endforeach
-                            @if ($dayEvents->count() > 2)<p class="px-1 text-[9px] text-[#80684f]">ほか{{ $dayEvents->count() - 2 }}件</p>@endif
-                        </div>
-                    </div>
-                @endforeach
-                @if (count($week['segments']) > 0)
-                    <div class="pointer-events-none absolute inset-x-0 top-10 grid grid-cols-7" style="grid-template-rows: repeat({{ $week['laneCount'] }}, 30px)">
-                        @foreach ($week['segments'] as $segment)
-                            @php($event = $segment['event'])
-                            <a href="{{ route('schedule.edit', $event) }}" style="grid-column: {{ $segment['startColumn'] }} / span {{ $segment['span'] }}; grid-row: {{ $segment['lane'] + 1 }}" class="pointer-events-auto mx-1 mt-0.5 flex h-7 min-w-0 flex-col justify-center overflow-hidden rounded-md border border-[#616161] bg-[#616161] px-1.5 py-0.5 text-[9px] font-semibold leading-tight text-white sm:text-[10px]">
-                                @if ($segment['continuesBefore'])
-                                    <span class="truncate">← 続き：{{ $typeNames[$event->event_type] ?? '予定' }} {{ $event->company_name ?: '' }}</span>
-                                @else
-                                    <span class="block whitespace-nowrap">{{ $event->starts_at->timezone('Asia/Tokyo')->format('H:i') }}-{{ $event->ends_at->timezone('Asia/Tokyo')->format('H:i') }}</span>
-                                    <span class="block truncate">{{ $typeNames[$event->event_type] ?? '' }}@if ($event->title && $event->title !== ($typeNames[$event->event_type] ?? ''))（{{ $event->title }}）@endif {{ $event->company_name ?: '' }}</span>
-                                @endif
-                            </a>
-                        @endforeach
-                    </div>
-                @endif
-            </div>
-        @endforeach
+        <div class="grid grid-cols-7">@foreach ($days as $day)@php($dayEvents = $eventsByDay->get($day->format('Y-m-d'), collect()))<div class="min-h-24 border-b border-r border-[#eee3d4] p-1.5 sm:min-h-32 sm:p-2.5 {{ $day->month === $month->month ? 'bg-[#fffaf3]' : 'bg-[#faf6ef] text-[#b5a58e]' }}"><a href="{{ route('schedule.create', ['date' => $day->format('Y-m-d')]) }}" class="inline-grid size-7 place-items-center rounded-full text-xs font-semibold hover:bg-[#f3e5cf] {{ $day->isToday() ? 'bg-[#31574a] text-white hover:bg-[#25483d]' : '' }}">{{ $day->day }}</a><div class="mt-1 space-y-1">@foreach ($dayEvents->take(2) as $event)<a href="{{ route('schedule.edit', $event) }}" class="block overflow-hidden rounded-md border px-1.5 py-1 text-[9px] font-semibold leading-tight {{ $isDeadline($event) ? $deadlineColor : ($statusColors[$event->confirmation_status] ?? $statusColors['planned']) }} sm:text-[10px]"><span class="block whitespace-nowrap">{{ $isDeadline($event) ? '~'.$event->starts_at->timezone('Asia/Tokyo')->format('H:i') : $event->starts_at->timezone('Asia/Tokyo')->format('H:i').($event->ends_at ? '-'.$event->ends_at->timezone('Asia/Tokyo')->format('H:i') : '') }}</span><span class="block truncate">{{ $typeNames[$event->event_type] ?? '' }}@if ($event->title && $event->title !== ($typeNames[$event->event_type] ?? '')) ({{ $event->title }})@endif {{ $event->company_name ?: '' }}</span></a>@endforeach @if ($dayEvents->count() > 2)<p class="px-1 text-[9px] text-[#80684f]">ほか{{ $dayEvents->count() - 2 }}件</p>@endif</div></div>@endforeach</div>
     </div>
     <div class="divide-y divide-[#eee3d4] sm:hidden">
         @forelse ($events as $event)
