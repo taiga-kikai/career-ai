@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-#[Fillable(['user_id', 'category', 'company', 'program', 'status', 'detail', 'compensation_summary', 'compensation_researched_at'])]
+#[Fillable(['user_id', 'category', 'company', 'program', 'status', 'detail', 'result_date', 'compensation_summary', 'compensation_researched_at'])]
 class CareerApplication extends Model
 {
     use HasFactory;
@@ -18,7 +18,7 @@ class CareerApplication extends Model
 
     protected function casts(): array
     {
-        return ['compensation_summary' => 'array', 'compensation_researched_at' => 'datetime'];
+        return ['result_date' => 'date', 'compensation_summary' => 'array', 'compensation_researched_at' => 'datetime'];
     }
 
     public function user(): BelongsTo

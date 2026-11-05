@@ -91,6 +91,7 @@
                 <label class="block text-xs font-semibold text-[#685442]"><span id="company-label">企業名</span><input id="application-company" name="company" type="text" maxlength="255" required class="mt-1.5 w-full rounded-xl border border-[#e8ddce] bg-white px-3.5 py-3 text-sm font-normal outline-none focus:border-[#c88b64] focus:ring-2 focus:ring-[#c88b64]/15"></label>
                 <label class="block text-xs font-semibold text-[#685442]">コース・職種（任意）<input id="application-program" name="program" type="text" maxlength="255" class="mt-1.5 w-full rounded-xl border border-[#e8ddce] bg-white px-3.5 py-3 text-sm font-normal outline-none focus:border-[#c88b64] focus:ring-2 focus:ring-[#c88b64]/15"></label>
                 <fieldset><legend class="text-xs font-semibold text-[#685442]">選考状況</legend><input id="application-status-group" name="status_group" type="hidden" required><input id="application-status-detail" name="status_detail" type="hidden"><input id="application-custom-status-detail" name="custom_status_detail" type="hidden"><div id="application-status-tags" class="mt-2 flex flex-wrap gap-2" role="group" aria-label="選考状況"></div><p id="application-status-current" class="mt-2 min-h-5 text-xs font-medium text-[#80684f]"></p></fieldset>
+                <label id="result-date-field" hidden class="block text-xs font-semibold text-[#685442]">結果予定日（任意）<input id="application-result-date" name="result_date" type="date" class="mt-1.5 w-full rounded-xl border border-[#e8ddce] bg-white px-3.5 py-3 text-sm font-normal outline-none focus:border-[#c88b64]"><span class="mt-1 block text-[11px] font-normal text-[#80684f]">分かっている場合だけ入力してください。カレンダーには自動登録しません。</span></label>
                 <section class="rounded-2xl border border-[#eadfce] bg-[#f8efdf] p-4">
                     <label class="flex cursor-pointer items-start gap-3 text-sm font-semibold text-[#685442]"><input id="add-to-schedule" name="add_to_schedule" type="checkbox" value="1" class="mt-0.5 size-4 accent-[#31574a]"><span>次の予定もスケジュールに登録<span class="mt-1 block text-xs font-normal text-[#80684f]">企業名と区分を引き継いで、予定を一緒に作成します。</span></span></label>
                     <div id="application-schedule-fields" class="mt-4 grid gap-4 sm:grid-cols-2" hidden>
@@ -149,6 +150,8 @@
         const customStatusDetailField = document.getElementById('application-custom-status-detail');
         const statusTags = document.getElementById('application-status-tags');
         const statusCurrent = document.getElementById('application-status-current');
+        const resultDateField = document.getElementById('result-date-field');
+        const resultDateInput = document.getElementById('application-result-date');
         const statusDetailDialog = document.getElementById('status-detail-dialog');
         const statusDetailTitle = document.getElementById('status-detail-title');
         const statusDetailOptions = document.getElementById('status-detail-options');
@@ -208,6 +211,7 @@
             const group = statusGroupField.value;
             const subtype = statusDetailField.value;
             statusCurrent.textContent = group ? `${group}${subtype ? `（${subtype}）` : ''}` : '状況を選んでください';
+            resultDateField.hidden = group !== '結果待ち';
         };
         const renderStatusGroups = () => {
             statusTags.replaceChildren(...statusGroups[categoryField.value].map((group) => {
@@ -471,6 +475,7 @@
             statusGroupField.value = row.dataset.statusGroup;
             statusDetailField.value = row.dataset.statusDetail || '';
             customStatusDetailField.value = '';
+            resultDateInput.value = row.dataset.resultDate || '';
             renderStatusGroups();
             companyField.value = row.dataset.company;
             programField.value = row.dataset.program || '';

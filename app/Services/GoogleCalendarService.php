@@ -10,6 +10,12 @@ use RuntimeException;
 
 class GoogleCalendarService
 {
+    private const CALENDAR_COLOR_LABELS = [
+        'eucalyptus' => ['id' => '4bd59069-a482-4b2f-a502-6d620b64002e', 'name' => 'ユーカリ', 'color' => '#009688', 'aliases' => ['ユーカリ', 'eucalyptus']],
+        'tomato' => ['id' => '8a8e78b5-5f65-4748-a21b-659c2d76b132', 'name' => 'トマト', 'color' => '#d50000', 'aliases' => ['トマト', 'tomato']],
+        'graphite' => ['id' => '167839c0-66d8-4ff6-b37d-a957a65af840', 'name' => 'グラファイト', 'color' => '#616161', 'aliases' => ['グラファイト', 'graphite']],
+    ];
+
     public function isConfigured(): bool
     {
         return filled(config('services.google_calendar.client_id'))
@@ -27,7 +33,7 @@ class GoogleCalendarService
             'client_id' => config('services.google_calendar.client_id'),
             'redirect_uri' => config('services.google_calendar.redirect_uri'),
             'response_type' => 'code',
-            'scope' => 'https://www.googleapis.com/auth/calendar.events',
+            'scope' => 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.calendars',
             'access_type' => 'offline',
             'include_granted_scopes' => 'true',
             'prompt' => 'consent',
@@ -58,12 +64,16 @@ class GoogleCalendarService
     {
         $accessToken = $this->refreshAccessToken($user);
         $url = 'https://www.googleapis.com/calendar/v3/calendars/primary/events';
-        $payload = $this->eventPayload($event);
+        $isDeadline = in_array($event->event_type, ['es_deadline', 'aptitude_deadline'], true);
+        $labels = $this->ensureCalendarColorLabels($accessToken);
+        $colorLabel = $isDeadline ? 'eucalyptus' : ($event->confirmation_status === 'confirmed' ? 'tomato' : 'graphite');
+        $payload = $this->eventPayload($event, $labels[$colorLabel]);
         $request = Http::withToken($accessToken)->acceptJson();
+        $query = '?sendUpdates=none&eventLabelVersion=1';
 
         $response = $event->google_calendar_event_id
-            ? $request->patch($url.'/'.rawurlencode($event->google_calendar_event_id).'?sendUpdates=none', $payload)
-            : $request->post($url.'?sendUpdates=none', $payload);
+            ? $request->patch($url.'/'.rawurlencode($event->google_calendar_event_id).$query, $payload)
+            : $request->post($url.$query, $payload);
 
         if (! $response->successful()) {
             throw new RuntimeException('Googleカレンダーへの保存に失敗しました。連携状態を確認して、もう一度お試しください。');
@@ -114,7 +124,7 @@ class GoogleCalendarService
     }
 
     /** @return array<string, mixed> */
-    private function eventPayload(ScheduleEvent $event): array
+    private function eventPayload(ScheduleEvent $event, string $eventLabelId): array
     {
         $start = $event->starts_at->timezone('Asia/Tokyo');
         $isDeadline = in_array($event->event_type, ['es_deadline', 'aptitude_deadline'], true);
@@ -135,16 +145,73 @@ class GoogleCalendarService
         $payload = [
             'summary' => implode('　', array_filter([$time, $activity, $event->company_name])),
             'description' => $description,
-            'colorId' => $event->confirmation_status === 'confirmed' ? '11' : '8',
             'start' => ['dateTime' => $start->toRfc3339String(), 'timeZone' => 'Asia/Tokyo'],
             'end' => ['dateTime' => $end->toRfc3339String(), 'timeZone' => 'Asia/Tokyo'],
             'reminders' => ['useDefault' => false, 'overrides' => []],
         ];
+
+        $payload['eventLabelId'] = $eventLabelId;
 
         if ($event->meeting_format === 'offline' && $event->location) {
             $payload['location'] = $event->location;
         }
 
         return $payload;
+    }
+
+    /** @return array<string, string> */
+    private function ensureCalendarColorLabels(string $accessToken): array
+    {
+        $url = 'https://www.googleapis.com/calendar/v3/calendars/primary';
+        $request = Http::withToken($accessToken)->acceptJson();
+        $calendarResponse = $request->get($url.'?fields=labelProperties');
+
+        if (! $calendarResponse->successful()) {
+            throw new RuntimeException('Googleカレンダーの色ラベルを確認できませんでした。カレンダーを再連携してください。');
+        }
+
+        $labelProperties = $calendarResponse->json('labelProperties', []);
+        $labels = is_array($labelProperties['eventLabels'] ?? null) ? $labelProperties['eventLabels'] : [];
+
+        $labelIds = [];
+        foreach ($labels as $label) {
+            if (! is_array($label)) {
+                continue;
+            }
+
+            $name = mb_strtolower((string) ($label['name'] ?? ''));
+            foreach (self::CALENDAR_COLOR_LABELS as $key => $definition) {
+                if (in_array($name, $definition['aliases'], true)) {
+                    $labelIds[$key] = (string) ($label['id'] ?? '');
+                }
+            }
+        }
+
+        $changed = false;
+        foreach (self::CALENDAR_COLOR_LABELS as $key => $definition) {
+            if (filled($labelIds[$key] ?? null)) {
+                continue;
+            }
+
+            $labels[] = [
+                'id' => $definition['id'],
+                'backgroundColor' => $definition['color'],
+                'name' => $definition['name'],
+            ];
+            $labelIds[$key] = $definition['id'];
+            $changed = true;
+        }
+
+        if ($changed) {
+            $updateResponse = $request->patch($url, [
+                'labelProperties' => ['eventLabels' => $labels],
+            ]);
+
+            if (! $updateResponse->successful()) {
+                throw new RuntimeException('Googleカレンダーに色ラベルを設定できませんでした。連携を更新してもう一度お試しください。');
+            }
+        }
+
+        return $labelIds;
     }
 }

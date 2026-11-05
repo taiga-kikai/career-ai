@@ -117,6 +117,7 @@ class ApplicationManagementPreviewController extends Controller
             'status_detail' => ['nullable', 'string', 'max:70'],
             'custom_status_detail' => ['nullable', 'string', 'max:70'],
             'detail' => ['nullable', 'string', 'max:3000'],
+            'result_date' => ['nullable', 'date_format:Y-m-d'],
         ]);
 
         $allowedGroups = $validated['category'] === 'main'
@@ -161,6 +162,7 @@ class ApplicationManagementPreviewController extends Controller
             'program' => $validated['program'] ?? null,
             'status' => $validated['status_group'].($statusDetail !== '' ? '（'.$statusDetail.'）' : ''),
             'detail' => $validated['detail'] ?? null,
+            'result_date' => $validated['status_group'] === '結果待ち' ? ($validated['result_date'] ?? null) : null,
         ];
     }
 
@@ -218,7 +220,7 @@ class ApplicationManagementPreviewController extends Controller
 
     /**
      * @param  Collection<int, CareerApplication>  $applications
-     * @return array<int, array{id: int, company: string, program: string|null, status: string, statusGroup: string, statusDetail: string|null, filter: string, detail: string|null}>
+     * @return array<int, array{id: int, company: string, program: string|null, status: string, statusGroup: string, statusDetail: string|null, filter: string, detail: string|null, resultDate: string|null}>
      */
     private function viewRows(Collection $applications): array
     {
@@ -235,6 +237,7 @@ class ApplicationManagementPreviewController extends Controller
                 'statusDetail' => $statusDetail,
                 'filter' => $this->statusFilter($statusGroup, $application->status),
                 'detail' => $application->detail,
+                'resultDate' => $application->result_date?->format('Y-m-d'),
                 'compensationSummary' => $application->compensation_summary,
                 'compensationResearchedAt' => $application->compensation_researched_at?->toIso8601String(),
             ];
