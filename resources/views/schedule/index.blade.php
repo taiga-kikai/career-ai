@@ -13,23 +13,28 @@
         <div class="grid grid-cols-7 border-b border-[#eee3d4] bg-[#f8f1e7] text-center text-[10px] font-semibold text-[#80684f] sm:text-xs">@foreach (['月', '火', '水', '木', '金', '土', '日'] as $weekday)<div class="py-3">{{ $weekday }}</div>@endforeach</div>
         @foreach ($weeks as $week)
             @php($laneCount = max(2, $week['laneCount']))
-            <div class="grid grid-cols-7" style="grid-template-rows: 36px repeat({{ $laneCount }}, 42px)">
-                @foreach ($week['days'] as $day)
-                    <div class="min-w-0 border-b border-r border-[#eee3d4] p-1.5 sm:p-2.5 {{ $day->month === $month->month ? 'bg-[#fffaf3]' : 'bg-[#faf6ef] text-[#b5a58e]' }}" style="grid-row: 1 / -1">
-                        <a href="{{ route('schedule.create', ['date' => $day->format('Y-m-d')]) }}" class="inline-grid size-7 place-items-center rounded-full text-xs font-semibold hover:bg-[#f3e5cf] {{ $day->isToday() ? 'bg-[#31574a] text-white hover:bg-[#25483d]' : '' }}">{{ $day->day }}</a>
-                    </div>
-                @endforeach
-                @foreach ($week['segments'] as $segment)
-                    @php($event = $segment['event'])
-                    <a href="{{ route('schedule.edit', $event) }}" style="grid-column: {{ $segment['startColumn'] }} / span {{ $segment['span'] }}; grid-row: {{ $segment['lane'] + 2 }}" class="z-10 mx-1 mt-1 flex min-w-0 flex-col justify-center overflow-hidden border px-1.5 py-1 text-[9px] font-semibold leading-tight {{ $isDeadline($event) ? $deadlineColor : ($statusColors[$event->confirmation_status] ?? $statusColors['planned']) }} {{ $segment['continuesBefore'] ? 'rounded-l-none border-l-0' : 'rounded-l-md' }} {{ $segment['continuesAfter'] ? 'rounded-r-none border-r-0' : 'rounded-r-md' }} sm:text-[10px]">
-                        @if ($segment['continuesBefore'])
-                            <span class="truncate">← 続き：{{ $typeNames[$event->event_type] ?? '予定' }} {{ $event->company_name ?: '' }}</span>
-                        @else
-                            <span class="block whitespace-nowrap">{{ $isDeadline($event) ? '~'.$event->starts_at->timezone('Asia/Tokyo')->format('H:i') : $event->starts_at->timezone('Asia/Tokyo')->format('H:i').($event->ends_at ? '-'.$event->ends_at->timezone('Asia/Tokyo')->format('H:i') : '') }}</span>
-                            <span class="block truncate">{{ $typeNames[$event->event_type] ?? '' }}@if ($event->title && $event->title !== ($typeNames[$event->event_type] ?? ''))（{{ $event->title }}）@endif {{ $event->company_name ?: '' }}</span>
-                        @endif
-                    </a>
-                @endforeach
+            @php($weekHeight = max(128, 40 + 30 * $laneCount))
+            <div class="relative w-full" style="height: {{ $weekHeight }}px">
+                <div class="absolute inset-0 grid grid-cols-7">
+                    @foreach ($week['days'] as $day)
+                        <div class="min-w-0 border-b border-r border-[#eee3d4] p-1.5 sm:p-2.5 {{ $day->month === $month->month ? 'bg-[#fffaf3]' : 'bg-[#faf6ef] text-[#b5a58e]' }}">
+                            <a href="{{ route('schedule.create', ['date' => $day->format('Y-m-d')]) }}" class="inline-grid size-7 place-items-center rounded-full text-xs font-semibold hover:bg-[#f3e5cf] {{ $day->isToday() ? 'bg-[#31574a] text-white hover:bg-[#25483d]' : '' }}">{{ $day->day }}</a>
+                        </div>
+                    @endforeach
+                </div>
+                <div class="pointer-events-none absolute inset-x-0 top-9 grid grid-cols-7" style="grid-template-rows: repeat({{ $laneCount }}, 30px)">
+                    @foreach ($week['segments'] as $segment)
+                        @php($event = $segment['event'])
+                        <a href="{{ route('schedule.edit', $event) }}" style="grid-column: {{ $segment['startColumn'] }} / span {{ $segment['span'] }}; grid-row: {{ $segment['lane'] + 1 }}" class="pointer-events-auto mx-1 mt-0.5 flex h-7 min-w-0 flex-col justify-center overflow-hidden border px-1.5 py-0.5 text-[9px] font-semibold leading-tight {{ $isDeadline($event) ? $deadlineColor : ($statusColors[$event->confirmation_status] ?? $statusColors['planned']) }} {{ $segment['continuesBefore'] ? 'rounded-l-none border-l-0' : 'rounded-l-md' }} {{ $segment['continuesAfter'] ? 'rounded-r-none border-r-0' : 'rounded-r-md' }} sm:text-[10px]">
+                            @if ($segment['continuesBefore'])
+                                <span class="truncate">← 続き：{{ $typeNames[$event->event_type] ?? '予定' }} {{ $event->company_name ?: '' }}</span>
+                            @else
+                                <span class="block whitespace-nowrap">{{ $isDeadline($event) ? '~'.$event->starts_at->timezone('Asia/Tokyo')->format('H:i') : $event->starts_at->timezone('Asia/Tokyo')->format('H:i').($event->ends_at ? '-'.$event->ends_at->timezone('Asia/Tokyo')->format('H:i') : '') }}</span>
+                                <span class="block truncate">{{ $typeNames[$event->event_type] ?? '' }}@if ($event->title && $event->title !== ($typeNames[$event->event_type] ?? ''))（{{ $event->title }}）@endif {{ $event->company_name ?: '' }}</span>
+                            @endif
+                        </a>
+                    @endforeach
+                </div>
             </div>
         @endforeach
     </div>
