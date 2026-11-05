@@ -9,6 +9,8 @@
 | Career AIのログイン画面 | [アプリを開く](https://career-ai-taiga-demo.onrender.com/) |
 | Render（デプロイ・環境変数・ログ） | [サービス管理画面](https://dashboard.render.com/web/srv-dbl85sijnfac73evom90) |
 | Neon（PostgreSQL・利用状況） | [Career AIプロジェクト](https://console.neon.tech/app/projects/empty-river-24101974/integrations) |
+| Google AI Studio（Gemini API） | [AI Studioを開く](https://aistudio.google.com/prompts/new_chat) |
+| Google Cloud（Calendar API・OAuthの監査ログ） | [監査ログを開く](https://console.cloud.google.com/logs/query;query=%2528logName%20%3D%20%22projects%2Fproject-41e84ac5-fd09-440b-b0f%2Flogs%2Fcloudaudit.googleapis.com%252Factivity%22%20OR%20logName%20%3D%20%22projects%2Fproject-41e84ac5-fd09-440b-b0f%2Flogs%2Fcloudaudit.googleapis.com%252Fdata_access%22%20OR%20labels.activity_type_name:*%2529;cursorTimestamp=2026-11-04T17:18:01.898920Z;duration=P7D?authuser=1&project=project-41e84ac5-fd09-440b-b0f) |
 
 RenderとNeonの管理画面を開くには、それぞれのアカウントへのログインとプロジェクト権限が必要です。このリンクは管理画面への入口であり、ログイン情報や権限を共有するものではありません。公開リポジトリにはパスワード、APIキー、DB接続URLなどの秘密情報を登録しないでください。
 
@@ -79,4 +81,4 @@ FreeプランのCUゲージと残り稼働時間は、Career AIのDB接続時間
 
 ## バージョン
 
-リリースはGitタグで管理します。初回公開版は `v1.00`、SQLiteの移行修正版は `v1.01`、Renderヘルスチェック修正版は `v1.02`、Renderの暗号化キー修正版は `v1.03`、公開デモURLをREADMEに追加した版は `v1.04`、RenderのHTTPS表示・ログイン送信修正版は `v1.05`、Renderから外部PostgreSQLへ接続する対応版は `v1.06`、本人アカウントのデータ移行コマンドを追加した版は v1.07、ホームのNeon利用状況カードを追加した版は `v1.08`、ローカルMySQLから全アカウントをNeonへ移行できるようにした版は `v1.09`、Neonが作る空のデモアカウントを再利用する修正版は `v1.10`、公開Render用Google Calendar OAuth設定を追加した版は `v1.11`、Freeプラン向けCU推定ゲージを追加した版は `v1.12`、Render・Neonの管理画面リンクをREADMEに整理した版は `v1.13`、PCでのローカル起動手順をREADMEに追加した版は `v1.14` です。今後も変更内容を記録してタグを追加します。
+リリースはGitタグで管理します。初回公開版は `v1.00`、SQLiteの移行修正版は `v1.01`、Renderヘルスチェック修正版は `v1.02`、Renderの暗号化キー修正版は `v1.03`、公開デモURLをREADMEに追加した版は `v1.04`、RenderのHTTPS表示・ログイン送信修正版は `v1.05`、Renderから外部PostgreSQLへ接続する対応版は `v1.06`、本人アカウントのデータ移行コマンドを追加した版は v1.07、ホームのNeon利用状況カードを追加した版は `v1.08`、ローカルMySQLから全アカウントをNeonへ移行できるようにした版は `v1.09`、Neonが作る空のデモアカウントを再利用する修正版は `v1.10`、公開Render用Google Calendar OAuth設定を追加した版は `v1.11`、Freeプラン向けCU推定ゲージを追加した版は `v1.12`、Render・Neonの管理画面リンクをREADMEに整理した版は `v1.13`、PCでのローカル起動手順をREADMEに追加した版は `v1.14`、Google AI StudioとGoogle Cloud監査ログへのリンクを追加した版は `v1.15` です。今後も変更内容を記録してタグを追加します。

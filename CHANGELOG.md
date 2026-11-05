@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.15
+
+- READMEのクイックリンクにGoogle AI Studio（Gemini API）を追加
+- Google Calendar APIやOAuthの確認に使うGoogle Cloud監査ログへのリンクを追加
+
 ## v1.14
 
 - VS Code、PowerShell、`php artisan serve`を使うPC向けローカル起動手順をREADMEに追加
