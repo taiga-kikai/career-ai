@@ -8,7 +8,8 @@
 <form method="POST" action="{{ $event ? route('schedule.update', $event) : route('schedule.store') }}" class="rounded-[1.5rem] border border-[#eadfce] bg-[#fffaf3] p-5 sm:p-7">
     @csrf @if ($event) @method('PUT') @endif
     <div class="grid gap-5 sm:grid-cols-2">
-        <label class="block text-sm font-semibold text-[#685442]">企業名（任意）<input name="company_name" type="text" maxlength="255" value="{{ old('company_name', $event?->company_name ?: $event?->application?->company ?? '') }}" placeholder="例：株式会社〇〇" class="mt-2 w-full rounded-xl border border-[#e8ddce] bg-white px-4 py-3 text-sm font-normal outline-none focus:border-[#c88b64]"></label>
+        <label class="block text-sm font-semibold text-[#685442]">企業・応募先と連携（任意）<select name="career_application_id" data-application-link class="mt-2 w-full rounded-xl border border-[#e8ddce] bg-white px-4 py-3 text-sm font-normal outline-none focus:border-[#c88b64]"><option value="">応募先に連携しない</option>@foreach ($applications as $application)<option value="{{ $application->id }}" data-company="{{ $application->company }}" data-selection-type="{{ $application->category === 'main' ? 'main' : 'internship' }}" @selected((string) old('career_application_id', $event?->career_application_id ?? '') === (string) $application->id)>{{ $application->company }}{{ $application->program ? ' · '.$application->program : '' }}（{{ ['main' => '本選考', 'summer' => '夏インターン', 'autumn' => '秋・冬インターン'][$application->category] ?? '' }}）</option>@endforeach</select></label>
+        <label class="block text-sm font-semibold text-[#685442]">企業名（任意）<input name="company_name" data-company-input type="text" maxlength="255" value="{{ old('company_name', $event?->company_name ?: $event?->application?->company ?? '') }}" placeholder="例：株式会社〇〇" class="mt-2 w-full rounded-xl border border-[#e8ddce] bg-white px-4 py-3 text-sm font-normal outline-none focus:border-[#c88b64]"></label>
         <label class="block text-sm font-semibold text-[#685442]">区分<select name="selection_type" required class="mt-2 w-full rounded-xl border border-[#e8ddce] bg-white px-4 py-3 text-sm font-normal outline-none focus:border-[#c88b64]"><option value="main" @selected(old('selection_type', $event?->selection_type ?? 'main') === 'main')>本選考</option><option value="internship" @selected(old('selection_type', $event?->selection_type ?? 'main') === 'internship')>インターン</option></select></label>
     </div>
     <fieldset class="mt-6"><legend class="text-sm font-semibold text-[#685442]">予定の状態</legend><div class="mt-2 flex flex-wrap gap-3">
@@ -31,6 +32,22 @@
 </form>
 <script>
 (() => {
+    const applicationLink = document.querySelector('[data-application-link]');
+    const companyInput = document.querySelector('[data-company-input]');
+    const selectionType = document.querySelector('[name="selection_type"]');
+    applicationLink?.addEventListener('change', () => {
+        const option = applicationLink.selectedOptions[0];
+        if (!applicationLink.value || !option) return;
+        companyInput.value = option.dataset.company || '';
+        selectionType.value = option.dataset.selectionType || 'main';
+    });
+    companyInput?.addEventListener('input', () => {
+        const selectedOption = applicationLink?.selectedOptions[0];
+        if (applicationLink?.value && companyInput.value !== selectedOption?.dataset.company) {
+            applicationLink.value = '';
+        }
+    });
+
     const eventType = document.querySelector('[data-event-type]');
     const startInput = document.querySelector('[name="starts_at"]');
     const startLabel = document.querySelector('[data-start-label]');

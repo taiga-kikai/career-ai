@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ScheduleEvent;
+use App\Models\CareerApplication;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
@@ -41,7 +42,7 @@ class ScheduleController extends Controller
         $date = $request->query('date');
         $date = is_string($date) && preg_match('/^\d{4}-\d{2}-\d{2}$/D', $date) === 1 ? $date : now('Asia/Tokyo')->addDay()->format('Y-m-d');
 
-        return view('schedule.form', ['event' => null, 'initialStart' => Carbon::parse($date, 'Asia/Tokyo')->setTime(10, 0)->format('Y-m-d\TH:i')]);
+        return view('schedule.form', ['event' => null, 'applications' => CareerApplication::query()->orderBy('company')->get(), 'initialStart' => Carbon::parse($date, 'Asia/Tokyo')->setTime(10, 0)->format('Y-m-d\TH:i')]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -57,7 +58,7 @@ class ScheduleController extends Controller
         $this->ensureLocalPreview();
         $event->load('application');
 
-        return view('schedule.form', ['event' => $event, 'initialStart' => $event->starts_at->timezone('Asia/Tokyo')->format('Y-m-d\TH:i')]);
+        return view('schedule.form', ['event' => $event, 'applications' => CareerApplication::query()->orderBy('company')->get(), 'initialStart' => $event->starts_at->timezone('Asia/Tokyo')->format('Y-m-d\TH:i')]);
     }
 
     public function update(Request $request, ScheduleEvent $event): RedirectResponse
@@ -148,6 +149,7 @@ class ScheduleController extends Controller
     {
         return $request->validate([
             'company_name' => ['nullable', 'string', 'max:255'],
+            'career_application_id' => ['nullable', 'integer', Rule::exists('career_applications', 'id')->where('user_id', $request->user()->id)],
             'selection_type' => ['required', Rule::in(['main', 'internship'])],
             'confirmation_status' => ['required', Rule::in(['planned', 'confirmed'])],
             'event_type' => ['required', Rule::in(self::EVENT_TYPES)],
@@ -164,7 +166,14 @@ class ScheduleController extends Controller
     /** @param array<string, mixed> $validated @return array<string, mixed> */
     private function eventData(array $validated): array
     {
-        $validated['career_application_id'] = null;
+        $application = ! empty($validated['career_application_id'])
+            ? CareerApplication::query()->findOrFail($validated['career_application_id'])
+            : null;
+        $validated['career_application_id'] = $application?->id;
+        if ($application) {
+            $validated['company_name'] = $application->company;
+            $validated['selection_type'] = $application->category === 'main' ? 'main' : 'internship';
+        }
         if (in_array($validated['event_type'], ['es_deadline', 'aptitude_deadline'], true)) {
             $validated['ends_at'] = null;
         }

@@ -91,6 +91,18 @@
                 <label class="block text-xs font-semibold text-[#685442]"><span id="company-label">企業名</span><input id="application-company" name="company" type="text" maxlength="255" required class="mt-1.5 w-full rounded-xl border border-[#e8ddce] bg-white px-3.5 py-3 text-sm font-normal outline-none focus:border-[#c88b64] focus:ring-2 focus:ring-[#c88b64]/15"></label>
                 <label class="block text-xs font-semibold text-[#685442]">コース・職種（任意）<input id="application-program" name="program" type="text" maxlength="255" class="mt-1.5 w-full rounded-xl border border-[#e8ddce] bg-white px-3.5 py-3 text-sm font-normal outline-none focus:border-[#c88b64] focus:ring-2 focus:ring-[#c88b64]/15"></label>
                 <fieldset><legend class="text-xs font-semibold text-[#685442]">選考状況</legend><input id="application-status-group" name="status_group" type="hidden" required><input id="application-status-detail" name="status_detail" type="hidden"><input id="application-custom-status-detail" name="custom_status_detail" type="hidden"><div id="application-status-tags" class="mt-2 flex flex-wrap gap-2" role="group" aria-label="選考状況"></div><p id="application-status-current" class="mt-2 min-h-5 text-xs font-medium text-[#80684f]"></p></fieldset>
+                <section class="rounded-2xl border border-[#eadfce] bg-[#f8efdf] p-4">
+                    <label class="flex cursor-pointer items-start gap-3 text-sm font-semibold text-[#685442]"><input id="add-to-schedule" name="add_to_schedule" type="checkbox" value="1" class="mt-0.5 size-4 accent-[#31574a]"><span>次の予定もスケジュールに登録<span class="mt-1 block text-xs font-normal text-[#80684f]">企業名と区分を引き継いで、予定を一緒に作成します。</span></span></label>
+                    <div id="application-schedule-fields" class="mt-4 grid gap-4 sm:grid-cols-2" hidden>
+                        <label class="block text-xs font-semibold text-[#685442]">予定内容<select id="application-schedule-type" name="schedule_event_type" class="mt-1.5 w-full rounded-xl border border-[#e8ddce] bg-white px-3.5 py-3 text-sm font-normal outline-none focus:border-[#c88b64]">
+                            <option value="">選択してください</option>
+                            @foreach (['briefing' => '説明会', 'interview_1' => '一次面接', 'interview_2' => '二次面接', 'interview_3' => '三次面接', 'interview_final' => '最終面接', 'ob_visit' => 'OB・OG訪問', 'internship' => 'インターン', 'group_discussion' => 'GD', 'es_deadline' => 'ES締切', 'aptitude_deadline' => '適性検査締切', 'other' => 'その他'] as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach
+                        </select></label>
+                        <label class="block text-xs font-semibold text-[#685442]">予定の状態<select name="schedule_confirmation_status" class="mt-1.5 w-full rounded-xl border border-[#e8ddce] bg-white px-3.5 py-3 text-sm font-normal outline-none focus:border-[#c88b64]"><option value="planned">予定（グレー）</option><option value="confirmed">確定（赤）</option></select></label>
+                        <label class="block text-xs font-semibold text-[#685442]"><span id="application-schedule-start-label">開始日時</span><input id="application-schedule-start" name="schedule_starts_at" type="datetime-local" class="mt-1.5 w-full rounded-xl border border-[#e8ddce] bg-white px-3.5 py-3 text-sm font-normal outline-none focus:border-[#c88b64]"></label>
+                        <label id="application-schedule-end-wrap" class="block text-xs font-semibold text-[#685442]">終了日時（任意）<input name="schedule_ends_at" type="datetime-local" class="mt-1.5 w-full rounded-xl border border-[#e8ddce] bg-white px-3.5 py-3 text-sm font-normal outline-none focus:border-[#c88b64]"></label>
+                    </div>
+                </section>
                 <label class="block text-xs font-semibold text-[#685442]">詳細・メモ（任意）<textarea id="application-detail" name="detail" rows="3" maxlength="3000" class="mt-1.5 w-full resize-y rounded-xl border border-[#e8ddce] bg-white px-3.5 py-3 text-sm font-normal outline-none focus:border-[#c88b64] focus:ring-2 focus:ring-[#c88b64]/15"></textarea></label><section id="compensation-panel" hidden class="rounded-2xl border border-[#eadfce] bg-[#f8efdf] p-4"><div class="flex flex-wrap items-center justify-between gap-2"><div><h3 class="text-sm font-semibold">初任給・待遇</h3><p class="mt-1 text-[11px] text-[#80684f]">AIが公開情報を探して要点を整理します。</p></div><button id="compensation-fetch" type="button" class="rounded-xl bg-[#31574a] px-3 py-2 text-xs font-semibold text-white">AIで調べる</button></div><div id="compensation-result" class="mt-3 space-y-2 text-xs leading-5 text-[#685442]"></div><a id="ask-company-ai" href="{{ route('research.index') }}" class="mt-3 inline-flex text-xs font-semibold text-[#a66c48] hover:underline">AIに追加で聞く →</a></section>
             </div>
             <div class="mt-6 flex items-center justify-between gap-2"><button id="application-delete" type="button" hidden class="rounded-xl border border-[#e7b9a8] px-4 py-2.5 text-sm font-semibold text-[#a94736] hover:bg-[#fff0eb]">応募先を削除</button><div class="flex justify-end gap-2"><button id="dialog-cancel" type="button" class="rounded-xl border border-[#e8ddce] px-4 py-2.5 text-sm font-medium text-[#685442] hover:bg-[#f7efe3]">キャンセル</button><button type="submit" class="rounded-xl bg-[#31574a] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#25483d]">保存</button></div></div>
@@ -145,6 +157,13 @@
         const statusDetailAdd = document.getElementById('status-detail-add');
         const statusDetailError = document.getElementById('status-detail-error');
         const detailField = document.getElementById('application-detail');
+        const addToSchedule = document.getElementById('add-to-schedule');
+        const applicationScheduleFields = document.getElementById('application-schedule-fields');
+        const applicationScheduleType = document.getElementById('application-schedule-type');
+        const applicationScheduleStart = document.getElementById('application-schedule-start');
+        const applicationScheduleEnd = applicationForm.querySelector('[name="schedule_ends_at"]');
+        const applicationScheduleStartLabel = document.getElementById('application-schedule-start-label');
+        const applicationScheduleEndWrap = document.getElementById('application-schedule-end-wrap');
         let activeCategory = 'main';
         let activeApplicationId = null;
         const compensationPanel = document.getElementById('compensation-panel');
@@ -152,6 +171,19 @@
         const compensationFetch = document.getElementById('compensation-fetch');
         const askCompanyAi = document.getElementById('ask-company-ai');
         let activeFilter = 'all';
+
+        const syncScheduleFields = () => {
+            const enabled = addToSchedule.checked;
+            const isDeadline = ['es_deadline', 'aptitude_deadline'].includes(applicationScheduleType.value);
+            applicationScheduleFields.hidden = !enabled;
+            applicationScheduleType.required = enabled;
+            applicationScheduleStart.required = enabled;
+            applicationScheduleStartLabel.textContent = isDeadline ? '締切日時' : '開始日時';
+            applicationScheduleEndWrap.hidden = isDeadline;
+            if (isDeadline) applicationScheduleEnd.value = '';
+        };
+        addToSchedule.addEventListener('change', syncScheduleFields);
+        applicationScheduleType.addEventListener('change', syncScheduleFields);
 
         const statusGroups = {
             main: ['応募予定', '選考中', '結果待ち', '不合格', '内々定', '辞退', 'その他'],
@@ -398,6 +430,8 @@
 
         const openAddDialog = () => {
             applicationForm.reset();
+            addToSchedule.checked = false;
+            syncScheduleFields();
             activeApplicationId = null;
             compensationPanel.hidden = true;
             compensationResult.replaceChildren();
@@ -418,6 +452,9 @@
         };
 
         const openEditDialog = (row) => {
+            applicationForm.reset();
+            addToSchedule.checked = false;
+            syncScheduleFields();
             activeApplicationId = row.dataset.id;
             compensationPanel.hidden = false;
             renderCompensationSummary(row.dataset.compensationSummary);

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\CareerApplication;
+use App\Models\ScheduleEvent;
+use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -46,23 +48,31 @@ class ApplicationManagementPreviewController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $this->ensureLocalPreview();
+        $applicationData = $this->validatedApplication($request);
+        $scheduleData = $this->validatedSchedule($request);
 
-        $application = DB::transaction(function () use ($request): CareerApplication {
-            return CareerApplication::query()->create($this->validatedApplication($request));
+        $application = DB::transaction(function () use ($applicationData, $scheduleData): CareerApplication {
+            $application = CareerApplication::query()->create($applicationData);
+            $this->createLinkedSchedule($application, $scheduleData);
+
+            return $application;
         });
 
-        return to_route('applications.preview', ['category' => $application->category])->with('application_saved', '応募先を追加しました。');
+        return to_route('applications.preview', ['category' => $application->category])->with('application_saved', $scheduleData ? '応募先とスケジュールを登録しました。' : '応募先を追加しました。');
     }
 
     public function update(Request $request, CareerApplication $application): RedirectResponse
     {
         $this->ensureLocalPreview();
+        $applicationData = $this->validatedApplication($request);
+        $scheduleData = $this->validatedSchedule($request);
 
-        DB::transaction(function () use ($request, $application): void {
-            $application->update($this->validatedApplication($request));
+        DB::transaction(function () use ($application, $applicationData, $scheduleData): void {
+            $application->update($applicationData);
+            $this->createLinkedSchedule($application, $scheduleData);
         });
 
-        return to_route('applications.preview', ['category' => $application->category])->with('application_saved', '変更を保存しました。');
+        return to_route('applications.preview', ['category' => $application->category])->with('application_saved', $scheduleData ? '企業情報を更新し、スケジュールを追加しました。' : '変更を保存しました。');
     }
 
     public function destroy(CareerApplication $application): RedirectResponse
@@ -157,6 +167,53 @@ class ApplicationManagementPreviewController extends Controller
     private function ensureLocalPreview(): void
     {
         abort_unless(app()->environment('local') || config('services.career_ai.web_enabled'), 404);
+    }
+
+    /** @return array{event_type: string, confirmation_status: string, starts_at: string, ends_at: string|null}|null */
+    private function validatedSchedule(Request $request): ?array
+    {
+        if (! $request->boolean('add_to_schedule')) {
+            return null;
+        }
+
+        $validated = $request->validate([
+            'schedule_event_type' => ['required', Rule::in(['briefing', 'interview_1', 'interview_2', 'interview_3', 'interview_final', 'ob_visit', 'internship', 'group_discussion', 'es_deadline', 'aptitude_deadline', 'other'])],
+            'schedule_confirmation_status' => ['required', Rule::in(['planned', 'confirmed'])],
+            'schedule_starts_at' => ['required', 'date_format:Y-m-d\\TH:i'],
+            'schedule_ends_at' => ['nullable', 'date_format:Y-m-d\\TH:i', 'after_or_equal:schedule_starts_at'],
+        ]);
+
+        return [
+            'event_type' => $validated['schedule_event_type'],
+            'confirmation_status' => $validated['schedule_confirmation_status'],
+            'starts_at' => $validated['schedule_starts_at'],
+            'ends_at' => $validated['schedule_ends_at'] ?? null,
+        ];
+    }
+
+    /** @param array{event_type: string, confirmation_status: string, starts_at: string, ends_at: string|null}|null $scheduleData */
+    private function createLinkedSchedule(CareerApplication $application, ?array $scheduleData): void
+    {
+        if ($scheduleData === null) {
+            return;
+        }
+
+        $typeNames = ScheduleController::eventTypeNames();
+        $eventType = $scheduleData['event_type'];
+        $startsAt = $scheduleData['starts_at'];
+        $endsAt = $scheduleData['ends_at'];
+        $isDeadline = in_array($eventType, ['es_deadline', 'aptitude_deadline'], true);
+
+        ScheduleEvent::query()->create([
+            'career_application_id' => $application->id,
+            'company_name' => $application->company,
+            'selection_type' => $application->category === 'main' ? 'main' : 'internship',
+            'confirmation_status' => $scheduleData['confirmation_status'],
+            'event_type' => $eventType,
+            'title' => $typeNames[$eventType] ?? '予定',
+            'starts_at' => Carbon::createFromFormat('Y-m-d\\TH:i', $startsAt, 'Asia/Tokyo'),
+            'ends_at' => ! $isDeadline && filled($endsAt) ? Carbon::createFromFormat('Y-m-d\\TH:i', $endsAt, 'Asia/Tokyo') : null,
+        ]);
     }
 
     /**
