@@ -24,13 +24,59 @@ class ScheduleController extends Controller
         $gridStart = $monthStart->startOfMonth()->startOfWeek(Carbon::MONDAY);
         $gridEnd = $monthStart->endOfMonth()->endOfWeek(Carbon::MONDAY);
         $days = collect(range(0, (int) $gridStart->diffInDays($gridEnd)))->map(fn (int $offset): CarbonImmutable => $gridStart->addDays($offset));
-        $events = ScheduleEvent::query()->with('application')->whereBetween('starts_at', [$monthStart->startOfMonth(), $monthStart->endOfMonth()])->orderBy('starts_at')->get();
+        $calendarEvents = ScheduleEvent::query()
+            ->with('application')
+            ->where('starts_at', '<=', $gridEnd->endOfDay())
+            ->where(fn ($query) => $query
+                ->where('ends_at', '>=', $gridStart->startOfDay())
+                ->orWhere(fn ($query) => $query->whereNull('ends_at')->where('starts_at', '>=', $gridStart->startOfDay())))
+            ->orderBy('starts_at')
+            ->get();
+        $events = $calendarEvents->filter(fn (ScheduleEvent $event): bool => $event->starts_at->timezone('Asia/Tokyo')->betweenIncluded($monthStart->startOfMonth(), $monthStart->endOfMonth()))->values();
+        $weeks = $days->chunk(7)->map(function ($weekDays) use ($calendarEvents): array {
+            $weekStart = $weekDays->first()->startOfDay();
+            $weekEnd = $weekDays->last()->endOfDay();
+            $lanes = [];
+            $segments = [];
+
+            foreach ($calendarEvents as $event) {
+                $eventStart = $event->starts_at->timezone('Asia/Tokyo')->startOfDay();
+                $eventEnd = ($event->ends_at ?? $event->starts_at)->timezone('Asia/Tokyo')->startOfDay();
+
+                if ($eventEnd->lt($weekStart) || $eventStart->gt($weekEnd)) {
+                    continue;
+                }
+
+                $segmentStart = $eventStart->lt($weekStart) ? $weekStart : $eventStart;
+                $segmentEnd = $eventEnd->gt($weekEnd) ? $weekEnd : $eventEnd;
+                $startColumn = $weekDays->search(fn (CarbonImmutable $day): bool => $day->isSameDay($segmentStart)) + 1;
+                $endColumn = $weekDays->search(fn (CarbonImmutable $day): bool => $day->isSameDay($segmentEnd)) + 1;
+                $lane = 0;
+
+                while (isset($lanes[$lane]) && collect($lanes[$lane])->contains(fn (array $range): bool => $startColumn <= $range['end'] && $endColumn >= $range['start'])) {
+                    $lane++;
+                }
+
+                $lanes[$lane][] = ['start' => $startColumn, 'end' => $endColumn];
+                $segments[] = [
+                    'event' => $event,
+                    'startColumn' => $startColumn,
+                    'span' => $endColumn - $startColumn + 1,
+                    'lane' => $lane,
+                    'continuesBefore' => $eventStart->lt($weekStart),
+                    'continuesAfter' => $eventEnd->gt($weekEnd),
+                ];
+            }
+
+            return ['days' => $weekDays, 'segments' => $segments, 'laneCount' => max(2, count($lanes))];
+        });
 
         return view('schedule.index', [
             'month' => $monthStart,
             'previousMonth' => $monthStart->subMonth()->format('Y-m'),
             'nextMonth' => $monthStart->addMonth()->format('Y-m'),
             'days' => $days,
+            'weeks' => $weeks,
             'events' => $events,
             'eventsByDay' => $events->groupBy(fn (ScheduleEvent $event): string => $event->starts_at->timezone('Asia/Tokyo')->format('Y-m-d')),
         ]);
