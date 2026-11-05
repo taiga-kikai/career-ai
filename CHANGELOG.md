@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.13
+
+- READMEの先頭にCareer AI、Render、Neonへのクイックリンクを追加
+- 管理画面は各サービスへのログインと権限が必要なこと、秘密情報を公開しないことを記載
+
 ## v1.12
 
 - Neon FreeのCU実績APIが使えない場合も、Career AI経由のDB接続時間からCU残数の推定ゲージを表示

@@ -2,6 +2,16 @@
 
 新卒就活の企業・応募管理、ES・書類、面接対策、企業研究、スケジュールをまとめるLaravel製Webアプリです。画面はスマートフォンとPCの両方に対応しています。
 
+## クイックリンク
+
+| 用途 | リンク |
+| --- | --- |
+| Career AIのログイン画面 | [アプリを開く](https://career-ai-taiga-demo.onrender.com/) |
+| Render（デプロイ・環境変数・ログ） | [サービス管理画面](https://dashboard.render.com/web/srv-dbl85sijnfac73evom90) |
+| Neon（PostgreSQL・利用状況） | [Career AIプロジェクト](https://console.neon.tech/app/projects/empty-river-24101974/integrations) |
+
+RenderとNeonの管理画面を開くには、それぞれのアカウントへのログインとプロジェクト権限が必要です。このリンクは管理画面への入口であり、ログイン情報や権限を共有するものではありません。公開リポジトリにはパスワード、APIキー、DB接続URLなどの秘密情報を登録しないでください。
+
 ## ローカル開発
 
 必要なもの: PHP 8.3以上、Composer、Node.js/npm、MySQL 8.4（またはSQLite）。
@@ -24,7 +34,7 @@ php artisan serve
 
 ## Render無料デモ
 
-公開URL: https://career-ai-taiga-demo.onrender.com
+公開URL: [https://career-ai-taiga-demo.onrender.com](https://career-ai-taiga-demo.onrender.com)
 
 リポジトリ直下の `render.yaml` を使うBlueprintデプロイに対応しています。Render側でGitHubリポジトリを選択し、デプロイ後に必要なら `GEMINI_API_KEY` をサービスの環境変数へ登録してください。Google Calendar連携を使うには、Renderの秘密環境変数 `GOOGLE_CALENDAR_CLIENT_ID` と `GOOGLE_CALENDAR_CLIENT_SECRET` にGoogle OAuthクライアント情報を設定し、Google Cloud Consoleの承認済みリダイレクトURIに `https://career-ai-taiga-demo.onrender.com/google-calendar/callback` を登録します。Google OAuthの公開ステータスがテスト中の場合、テストユーザーに追加したGoogleアカウントのみ連携でき、認可は7日で期限切れになります。一般公開して期限制限をなくすには、OAuthアプリ公開とGoogleの必要な確認手続きが別途必要です。共有デモアカウントでは個人のGoogleカレンダーを誤接続しないよう、この連携機能を使用できません。個人アカウントでログインして連携してください。PostgreSQLを使う場合は、Renderの秘密環境変数 `DB_URL` に接続URLを設定します。`DB_URL` がなければ一時SQLiteを使います。
 
@@ -53,4 +63,4 @@ FreeプランのCUゲージと残り稼働時間は、Career AIのDB接続時間
 
 ## バージョン
 
-リリースはGitタグで管理します。初回公開版は `v1.00`、SQLiteの移行修正版は `v1.01`、Renderヘルスチェック修正版は `v1.02`、Renderの暗号化キー修正版は `v1.03`、公開デモURLをREADMEに追加した版は `v1.04`、RenderのHTTPS表示・ログイン送信修正版は `v1.05`、Renderから外部PostgreSQLへ接続する対応版は `v1.06`、本人アカウントのデータ移行コマンドを追加した版は v1.07、ホームのNeon利用状況カードを追加した版は `v1.08`、ローカルMySQLから全アカウントをNeonへ移行できるようにした版は `v1.09`、Neonが作る空のデモアカウントを再利用する修正版は `v1.10`、公開Render用Google Calendar OAuth設定を追加した版は `v1.11`、Freeプラン向けCU推定ゲージを追加した版は `v1.12` です。今後も変更内容を記録してタグを追加します。
+リリースはGitタグで管理します。初回公開版は `v1.00`、SQLiteの移行修正版は `v1.01`、Renderヘルスチェック修正版は `v1.02`、Renderの暗号化キー修正版は `v1.03`、公開デモURLをREADMEに追加した版は `v1.04`、RenderのHTTPS表示・ログイン送信修正版は `v1.05`、Renderから外部PostgreSQLへ接続する対応版は `v1.06`、本人アカウントのデータ移行コマンドを追加した版は v1.07、ホームのNeon利用状況カードを追加した版は `v1.08`、ローカルMySQLから全アカウントをNeonへ移行できるようにした版は `v1.09`、Neonが作る空のデモアカウントを再利用する修正版は `v1.10`、公開Render用Google Calendar OAuth設定を追加した版は `v1.11`、Freeプラン向けCU推定ゲージを追加した版は `v1.12`、Render・Neonの管理画面リンクをREADMEに整理した版は `v1.13` です。今後も変更内容を記録してタグを追加します。
