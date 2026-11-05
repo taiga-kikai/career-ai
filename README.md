@@ -26,6 +26,22 @@ php artisan migrate --seed
 php artisan serve
 ```
 
+### PCでローカル版を起動してテスト
+
+初期設定が終わった後は、毎回以下の手順で起動します。
+
+1. VS Codeで `C:\Users\taiga\career-ai` フォルダーを開く
+2. メニューの「ターミナル」→「新しいターミナル」を選ぶ
+3. PowerShellでプロジェクトフォルダーにいることを確認し、次を実行する
+
+```powershell
+php artisan serve
+```
+
+4. 表示されたら、同じPCのブラウザーで [http://127.0.0.1:8000/](http://127.0.0.1:8000/) を開く
+
+PowerShellのウィンドウは起動中そのままにします。停止するときはターミナルで `Ctrl+C` を押します。ローカル版は `.env` のDB設定を使うため、`DB_CONNECTION=mysql` ならローカルMySQLに接続し、Render上の公開版やNeonとは別に動作します。
+
 `.env` にGemini APIキーを設定すると企業研究AIを使えます。Google Calendar連携はOAuthの認証情報を設定したローカル環境で有効にしてください。`.env` と実データベースはGitに含めません。
 
 ## アカウントとデータ
@@ -63,4 +79,4 @@ FreeプランのCUゲージと残り稼働時間は、Career AIのDB接続時間
 
 ## バージョン
 
-リリースはGitタグで管理します。初回公開版は `v1.00`、SQLiteの移行修正版は `v1.01`、Renderヘルスチェック修正版は `v1.02`、Renderの暗号化キー修正版は `v1.03`、公開デモURLをREADMEに追加した版は `v1.04`、RenderのHTTPS表示・ログイン送信修正版は `v1.05`、Renderから外部PostgreSQLへ接続する対応版は `v1.06`、本人アカウントのデータ移行コマンドを追加した版は v1.07、ホームのNeon利用状況カードを追加した版は `v1.08`、ローカルMySQLから全アカウントをNeonへ移行できるようにした版は `v1.09`、Neonが作る空のデモアカウントを再利用する修正版は `v1.10`、公開Render用Google Calendar OAuth設定を追加した版は `v1.11`、Freeプラン向けCU推定ゲージを追加した版は `v1.12`、Render・Neonの管理画面リンクをREADMEに整理した版は `v1.13` です。今後も変更内容を記録してタグを追加します。
+リリースはGitタグで管理します。初回公開版は `v1.00`、SQLiteの移行修正版は `v1.01`、Renderヘルスチェック修正版は `v1.02`、Renderの暗号化キー修正版は `v1.03`、公開デモURLをREADMEに追加した版は `v1.04`、RenderのHTTPS表示・ログイン送信修正版は `v1.05`、Renderから外部PostgreSQLへ接続する対応版は `v1.06`、本人アカウントのデータ移行コマンドを追加した版は v1.07、ホームのNeon利用状況カードを追加した版は `v1.08`、ローカルMySQLから全アカウントをNeonへ移行できるようにした版は `v1.09`、Neonが作る空のデモアカウントを再利用する修正版は `v1.10`、公開Render用Google Calendar OAuth設定を追加した版は `v1.11`、Freeプラン向けCU推定ゲージを追加した版は `v1.12`、Render・Neonの管理画面リンクをREADMEに整理した版は `v1.13`、PCでのローカル起動手順をREADMEに追加した版は `v1.14` です。今後も変更内容を記録してタグを追加します。

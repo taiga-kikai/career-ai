@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.14
+
+- VS Code、PowerShell、`php artisan serve`を使うPC向けローカル起動手順をREADMEに追加
+- ローカルMySQLとRender上のNeonが別環境であることを明記
+
 ## v1.13
 
 - READMEの先頭にCareer AI、Render、Neonへのクイックリンクを追加
