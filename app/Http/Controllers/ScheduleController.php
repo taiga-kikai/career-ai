@@ -24,15 +24,84 @@ class ScheduleController extends Controller
         $gridStart = $monthStart->startOfMonth()->startOfWeek(Carbon::MONDAY);
         $gridEnd = $monthStart->endOfMonth()->endOfWeek(Carbon::MONDAY);
         $days = collect(range(0, (int) $gridStart->diffInDays($gridEnd)))->map(fn (int $offset): CarbonImmutable => $gridStart->addDays($offset));
-        $events = ScheduleEvent::query()->with('application')->whereBetween('starts_at', [$monthStart->startOfMonth(), $monthStart->endOfMonth()])->orderBy('starts_at')->get();
+        $calendarEvents = ScheduleEvent::query()
+            ->with('application')
+            ->where('starts_at', '<=', $gridEnd->endOfDay())
+            ->where(fn ($query) => $query
+                ->where('ends_at', '>=', $gridStart->startOfDay())
+                ->orWhere(fn ($query) => $query->whereNull('ends_at')->where('starts_at', '>=', $gridStart->startOfDay())))
+            ->orderBy('starts_at')
+            ->get();
+        $events = $calendarEvents->filter(fn (ScheduleEvent $event): bool => $event->starts_at->timezone('Asia/Tokyo')->betweenIncluded($monthStart->startOfMonth(), $monthStart->endOfMonth()))->values();
+        $singleDayEvents = $events->reject(fn (ScheduleEvent $event): bool => $event->confirmation_status === 'planned'
+            && $event->ends_at !== null
+            && $event->ends_at->timezone('Asia/Tokyo')->toDateString() > $event->starts_at->timezone('Asia/Tokyo')->toDateString())->values();
+        $weeks = $days->chunk(7)->map(function ($weekDays) use ($calendarEvents, $singleDayEvents): array {
+            $weekStart = $weekDays->first()->startOfDay();
+            $weekEnd = $weekDays->last()->endOfDay();
+            $lanes = [];
+            $segments = [];
+
+            foreach ($calendarEvents as $event) {
+                if ($event->confirmation_status !== 'planned' || $event->ends_at === null) {
+                    continue;
+                }
+
+                $eventStart = $event->starts_at->timezone('Asia/Tokyo')->startOfDay();
+                $eventEnd = $event->ends_at->timezone('Asia/Tokyo')->startOfDay();
+
+                if ($eventEnd->lte($eventStart) || $eventEnd->lt($weekStart) || $eventStart->gt($weekEnd)) {
+                    continue;
+                }
+
+                $segmentStart = $eventStart->lt($weekStart) ? $weekStart : $eventStart;
+                $segmentEnd = $eventEnd->gt($weekEnd) ? $weekEnd : $eventEnd;
+                $startColumn = $weekDays->search(fn (CarbonImmutable $day): bool => $day->isSameDay($segmentStart)) + 1;
+                $endColumn = $weekDays->search(fn (CarbonImmutable $day): bool => $day->isSameDay($segmentEnd)) + 1;
+                $lane = 0;
+
+                while (isset($lanes[$lane]) && collect($lanes[$lane])->contains(fn (array $range): bool => $startColumn <= $range['end'] && $endColumn >= $range['start'])) {
+                    $lane++;
+                }
+
+                $lanes[$lane][] = ['start' => $startColumn, 'end' => $endColumn];
+                $segments[] = [
+                    'event' => $event,
+                    'startColumn' => $startColumn,
+                    'span' => $endColumn - $startColumn + 1,
+                    'lane' => $lane,
+                    'continuesBefore' => $eventStart->lt($weekStart),
+                    'continuesAfter' => $eventEnd->gt($weekEnd),
+                ];
+            }
+
+            $occupiedLanes = [];
+            foreach ($segments as $segment) {
+                for ($column = $segment['startColumn']; $column < $segment['startColumn'] + $segment['span']; $column++) {
+                    $date = $weekDays->get($column - 1)->format('Y-m-d');
+                    $occupiedLanes[$date] = max($occupiedLanes[$date] ?? 0, $segment['lane'] + 1);
+                }
+            }
+
+            $height = max(128, 40 + 30 * count($lanes));
+            foreach ($weekDays as $day) {
+                $date = $day->format('Y-m-d');
+                $eventCount = $singleDayEvents->filter(fn (ScheduleEvent $event): bool => $event->starts_at->timezone('Asia/Tokyo')->format('Y-m-d') === $date)->count();
+                $visibleEventCount = min(2, $eventCount);
+                $height = max($height, 52 + 30 * ($occupiedLanes[$date] ?? 0) + 40 * $visibleEventCount + ($eventCount > 2 ? 16 : 0));
+            }
+
+            return ['days' => $weekDays, 'segments' => $segments, 'occupiedLanes' => $occupiedLanes, 'laneCount' => max(1, count($lanes)), 'height' => $height];
+        });
 
         return view('schedule.index', [
             'month' => $monthStart,
             'previousMonth' => $monthStart->subMonth()->format('Y-m'),
             'nextMonth' => $monthStart->addMonth()->format('Y-m'),
             'days' => $days,
+            'weeks' => $weeks,
             'events' => $events,
-            'eventsByDay' => $events->groupBy(fn (ScheduleEvent $event): string => $event->starts_at->timezone('Asia/Tokyo')->format('Y-m-d')),
+            'eventsByDay' => $singleDayEvents->groupBy(fn (ScheduleEvent $event): string => $event->starts_at->timezone('Asia/Tokyo')->format('Y-m-d')),
         ]);
     }
 
