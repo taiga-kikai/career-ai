@@ -165,6 +165,9 @@ class ScheduleController extends Controller
     private function eventData(array $validated): array
     {
         $validated['career_application_id'] = null;
+        if (in_array($validated['event_type'], ['es_deadline', 'aptitude_deadline'], true)) {
+            $validated['ends_at'] = null;
+        }
         if (($validated['meeting_format'] ?? null) === 'online') {
             $validated['location'] = null;
         }

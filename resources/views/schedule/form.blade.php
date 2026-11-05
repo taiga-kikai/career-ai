@@ -16,13 +16,13 @@
         <label class="cursor-pointer"><input class="peer sr-only" type="radio" name="confirmation_status" value="confirmed" @checked(old('confirmation_status', $event?->confirmation_status ?? 'planned') === 'confirmed')><span class="inline-flex rounded-full border border-[#e7b1ac] bg-[#fde8e6] px-4 py-2 text-sm font-semibold text-[#a33] peer-checked:border-[#c5221f] peer-checked:bg-[#d50000] peer-checked:text-white">確定（赤）</span></label>
     </div></fieldset>
     <div class="mt-6 grid gap-5 sm:grid-cols-2">
-        <label class="block text-sm font-semibold text-[#685442]">内容<select name="event_type" required class="mt-2 w-full rounded-xl border border-[#e8ddce] bg-white px-4 py-3 text-sm font-normal outline-none focus:border-[#c88b64]">
+        <label class="block text-sm font-semibold text-[#685442]">内容<select name="event_type" required data-event-type class="mt-2 w-full rounded-xl border border-[#e8ddce] bg-white px-4 py-3 text-sm font-normal outline-none focus:border-[#c88b64]">
             @foreach (['briefing' => '説明会', 'interview_1' => '一次面接', 'interview_2' => '二次面接', 'interview_3' => '三次面接', 'interview_final' => '最終面接', 'ob_visit' => 'OB・OG訪問', 'internship' => 'インターン', 'group_discussion' => 'GD', 'es_deadline' => 'ES締切', 'aptitude_deadline' => '適性検査締切', 'other' => 'その他'] as $value => $label)<option value="{{ $value }}" @selected(old('event_type', $event?->event_type ?? 'briefing') === $value)>{{ $label }}</option>@endforeach
         </select></label>
         <label class="block text-sm font-semibold text-[#685442]">補足（オンライン／オフライン）<select name="meeting_format" class="mt-2 w-full rounded-xl border border-[#e8ddce] bg-white px-4 py-3 text-sm font-normal outline-none focus:border-[#c88b64]"><option value="">選択しない</option><option value="online" @selected(old('meeting_format', $event?->meeting_format ?? '') === 'online')>オンライン</option><option value="offline" @selected(old('meeting_format', $event?->meeting_format ?? '') === 'offline')>オフライン</option></select></label>
         <label class="block text-sm font-semibold text-[#685442]">その他の補足（任意）<input name="title" type="text" maxlength="255" value="{{ old('title', $event?->title ?? '') }}" placeholder="例：提出フォーム、持ち物" class="mt-2 w-full rounded-xl border border-[#e8ddce] bg-white px-4 py-3 text-sm font-normal outline-none focus:border-[#c88b64]"></label>
-        <label class="block text-sm font-semibold text-[#685442]">{{ $isDeadline ? '締切日時' : '開始日時' }}<input name="starts_at" type="datetime-local" required value="{{ old('starts_at', $initialStart) }}" class="mt-2 w-full rounded-xl border border-[#e8ddce] bg-white px-4 py-3 text-sm font-normal outline-none focus:border-[#c88b64]"></label>
-        <label class="block text-sm font-semibold text-[#685442]">終了日時（任意）<input name="ends_at" type="datetime-local" value="{{ old('ends_at', $event?->ends_at?->timezone('Asia/Tokyo')->format('Y-m-d\TH:i') ?? '') }}" class="mt-2 w-full rounded-xl border border-[#e8ddce] bg-white px-4 py-3 text-sm font-normal outline-none focus:border-[#c88b64]"></label>
+        <label class="block text-sm font-semibold text-[#685442]"><span data-start-label>{{ $isDeadline ? '締切日時' : '開始日時' }}</span><input name="starts_at" type="datetime-local" required value="{{ old('starts_at', $initialStart) }}" class="mt-2 w-full rounded-xl border border-[#e8ddce] bg-white px-4 py-3 text-sm font-normal outline-none focus:border-[#c88b64]"></label>
+        <label data-end-field class="block text-sm font-semibold text-[#685442] {{ $isDeadline ? 'hidden' : '' }}">終了日時（任意）<input name="ends_at" type="datetime-local" value="{{ old('ends_at', $event?->ends_at?->timezone('Asia/Tokyo')->format('Y-m-d\TH:i') ?? '') }}" class="mt-2 w-full rounded-xl border border-[#e8ddce] bg-white px-4 py-3 text-sm font-normal outline-none focus:border-[#c88b64]"></label>
         <label data-location-field class="block text-sm font-semibold text-[#685442] {{ old('meeting_format', $event?->meeting_format ?? '') === 'offline' ? '' : 'hidden' }}">場所（任意）<input name="location" type="text" maxlength="255" value="{{ old('location', $event?->location ?? '') }}" placeholder="例：会社名・会場名" class="mt-2 w-full rounded-xl border border-[#e8ddce] bg-white px-4 py-3 text-sm font-normal outline-none focus:border-[#c88b64]"></label>
         <label class="block text-sm font-semibold text-[#685442]">参加URL（任意）<input name="meeting_url" type="url" maxlength="2048" value="{{ old('meeting_url', $event?->meeting_url ?? '') }}" placeholder="https://..." class="mt-2 w-full rounded-xl border border-[#e8ddce] bg-white px-4 py-3 text-sm font-normal outline-none focus:border-[#c88b64]"></label>
     </div>
@@ -31,6 +31,37 @@
 </form>
 <script>
 (() => {
+    const eventType = document.querySelector('[data-event-type]');
+    const startInput = document.querySelector('[name="starts_at"]');
+    const startLabel = document.querySelector('[data-start-label]');
+    const endField = document.querySelector('[data-end-field]');
+    const endInput = endField?.querySelector('input');
+    const deadlineTypes = ['es_deadline', 'aptitude_deadline'];
+    const isDeadline = (value) => deadlineTypes.includes(value);
+    const toLocalDateTime = (date) => {
+        const pad = (value) => String(value).padStart(2, '0');
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    };
+
+    // 既存の締切予定に終了日時が残っている場合も、フォーム表示時に空にする。
+    if (isDeadline(eventType?.value) && endInput) endInput.value = '';
+
+    eventType?.addEventListener('change', () => {
+        const becameDeadline = isDeadline(eventType.value);
+
+        if (becameDeadline) {
+            // 終了日時を締切日時へ移し、終了日時を空にする。
+            if (endInput?.value) startInput.value = endInput.value;
+            if (endInput) endInput.value = '';
+        } else {
+            // 締切系から通常予定へ切り替えた時点を開始日時にする。
+            startInput.value = toLocalDateTime(new Date());
+        }
+
+        startLabel.textContent = becameDeadline ? '締切日時' : '開始日時';
+        endField?.classList.toggle('hidden', becameDeadline);
+    });
+
     const format = document.querySelector('[name="meeting_format"]');
     const locationField = document.querySelector('[data-location-field]');
     const locationInput = locationField?.querySelector('input');
