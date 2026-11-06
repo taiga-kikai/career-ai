@@ -3,6 +3,8 @@
 namespace App;
 
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Http\Client\ConnectionException;
 use RuntimeException;
 use Throwable;
 
@@ -59,20 +61,60 @@ class EsQuestionParser
 
         $prompt = "あなたは就職活動のES整理アシスタントです。以下の貼り付け文章から、企業の質問文と応募者の回答を順番どおりに抽出してJSONにしてください。質問や回答を創作・要約せず、判別できない箇所は原文を保ってください。\n\n<貼り付け文章>\n{$rawText}\n</貼り付け文章>";
 
-        $response = Http::withHeaders(['x-goog-api-key' => config('services.gemini.api_key')])
-            ->connectTimeout(5)
-            ->timeout(45)
-            ->post('https://generativelanguage.googleapis.com/v1/interactions', [
-                'model' => config('services.gemini.model', 'gemini-3.5-flash-lite'),
-                'input' => $prompt,
-                'store' => false,
-                'response_format' => [
-                    'type' => 'text',
-                    'mime_type' => 'application/json',
-                    'schema' => $schema,
-                ],
-            ])
-            ->throw();
+        $model = config('services.gemini.model', 'gemini-3.5-flash-lite');
+
+        try {
+            $response = Http::withHeaders(['x-goog-api-key' => config('services.gemini.api_key')])
+                ->connectTimeout(5)
+                ->timeout(45)
+                ->post('https://generativelanguage.googleapis.com/v1/interactions', [
+                    'model' => $model,
+                    'input' => $prompt,
+                    'store' => false,
+                    'response_format' => [
+                        'type' => 'text',
+                        'mime_type' => 'application/json',
+                        'schema' => $schema,
+                    ],
+                ]);
+        } catch (ConnectionException $exception) {
+            Log::error('Gemini ES parse connection failed', [
+                'model' => $model,
+                'exception_class' => $exception::class,
+            ]);
+
+            throw new RuntimeException('Gemini APIへ接続できませんでした。');
+        }
+
+        if (! $response->successful()) {
+            $providerError = $response->json('error', []);
+            $providerError = is_array($providerError) ? $providerError : [];
+            $retryAfter = $response->header('Retry-After');
+
+            foreach (($providerError['details'] ?? []) as $detail) {
+                if (is_array($detail)
+                    && str_ends_with((string) ($detail['@type'] ?? ''), 'RetryInfo')
+                    && is_string($detail['retryDelay'] ?? null)) {
+                    $retryAfter ??= $detail['retryDelay'];
+                }
+            }
+
+            $providerMessage = $providerError['message'] ?? null;
+            if (is_string($providerMessage)) {
+                $providerMessage = mb_substr(str_replace((string) config('services.gemini.api_key'), '[REDACTED]', $providerMessage), 0, 500);
+            }
+
+            Log::error('Gemini ES parse request rejected', [
+                'model' => $model,
+                'http_status' => $response->status(),
+                'provider_code' => $providerError['code'] ?? $response->status(),
+                'provider_status' => $providerError['status'] ?? null,
+                'provider_message' => $providerMessage,
+                'retry_after' => $retryAfter,
+            ]);
+
+            throw new RuntimeException('Gemini ES整理APIがHTTP '.$response->status().'で応答しました。');
+        }
 
         $output = collect($response->json('steps', []))
             ->where('type', 'model_output')
@@ -132,7 +174,10 @@ class EsQuestionParser
                 if ($current !== null) {
                     $segments[] = $current;
                 }
-                $question = preg_replace('/^(?:Q(?:uestion)?\s*\d*\s*[:：.)）-]?|質問\s*\d*\s*[:：.)）-]?|設問\s*\d*\s*[:：.)）-]?|問\s*\d+\s*[:：.)）-]?)\s*/iu', '', $line) ?: $line;
+                $isNumberedHeading = preg_match('/^(?:Q(?:uestion)?|質問|設問|問)\s*\d+(?:\s|$|[:：.)）-])/iu', $line) === 1;
+                $question = $isNumberedHeading
+                    ? $line
+                    : (preg_replace('/^(?:Q(?:uestion)?\s*\d*\s*[:：.)）-]?|質問\s*\d*\s*[:：.)）-]?|設問\s*\d*\s*[:：.)）-]?|問\s*\d+\s*[:：.)）-]?)\s*/iu', '', $line) ?: $line);
                 $current = ['question' => $question, 'answer' => ''];
             } elseif ($current === null) {
                 $current = ['question' => '質問の区切りを自動判定できませんでした', 'answer' => $line];
@@ -144,6 +189,24 @@ class EsQuestionParser
         if ($current !== null) {
             $segments[] = $current;
         }
+
+        $segments = array_map(function (array $segment): array {
+            $question = trim((string) ($segment['question'] ?? ''));
+            $answer = trim((string) ($segment['answer'] ?? ''));
+            $isNumberedHeading = preg_match('/^(?:Q(?:uestion)?|質問|設問|問)\s*\d+(?:\s|$|[:：.)）-])/iu', $question) === 1;
+            $combined = $isNumberedHeading ? $answer : trim($question."\n".$answer);
+            $requestEnding = '(?:入力してください|入力して下さい|ご入力ください|記入してください|ご記入ください|記入して下さい|回答してください|お答えください|選択してください|教えてください|説明してください|述べてください|記載してください|お書きください|ご回答ください)';
+
+            if (preg_match('/^(.+?'.$requestEnding.'[。．.!！]?)[\s]*([\s\S]*)$/u', $combined, $matches) === 1) {
+                return ['question' => trim($matches[1]), 'answer' => trim($matches[2])];
+            }
+
+            if ($isNumberedHeading && $combined !== '') {
+                return ['question' => $combined, 'answer' => ''];
+            }
+
+            return ['question' => $question, 'answer' => $answer];
+        }, $segments);
 
         return $segments === []
             ? [['question' => '質問の区切りを自動判定できませんでした', 'answer' => trim($rawText)]]
