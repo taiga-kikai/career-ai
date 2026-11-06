@@ -3,7 +3,9 @@
 namespace App;
 
 use Illuminate\Support\Collection;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use RuntimeException;
 use Throwable;
 
@@ -66,16 +68,77 @@ class CompanyResearchAssistant
             throw new RuntimeException('Gemini APIキーが未設定です。');
         }
 
-        $response = Http::withHeaders(['x-goog-api-key' => $apiKey])
-            ->connectTimeout(5)
-            ->timeout(60)
-            ->post('https://generativelanguage.googleapis.com/v1/interactions', [
-                'model' => config('services.gemini.model', 'gemini-3.5-flash-lite'),
-                'input' => $prompt,
-                'store' => false,
-                'tools' => [['type' => 'google_search']],
-                ...$extra,
+        $model = config('services.gemini.model', 'gemini-3.5-flash-lite');
+
+        try {
+            $response = Http::withHeaders(['x-goog-api-key' => $apiKey])
+                ->connectTimeout(5)
+                ->timeout(60)
+                ->post('https://generativelanguage.googleapis.com/v1/interactions', [
+                    'model' => $model,
+                    'input' => $prompt,
+                    'store' => false,
+                    'tools' => [['type' => 'google_search']],
+                    ...$extra,
+                ]);
+        } catch (ConnectionException $exception) {
+            Log::error('Gemini API connection failed', [
+                'model' => $model,
+                'exception_class' => $exception::class,
             ]);
+
+            throw new RuntimeException('Gemini APIへ接続できませんでした。時間をおいて再試行してください。');
+        }
+
+        if (! $response->successful()) {
+            $providerError = $response->json('error', []);
+            $providerError = is_array($providerError) ? $providerError : [];
+            $retryAfter = $response->header('Retry-After');
+            $quotaFailures = [];
+
+            foreach (($providerError['details'] ?? []) as $detail) {
+                if (! is_array($detail)) {
+                    continue;
+                }
+
+                $type = (string) ($detail['@type'] ?? '');
+                if (str_ends_with($type, 'RetryInfo') && is_string($detail['retryDelay'] ?? null)) {
+                    $retryAfter ??= $detail['retryDelay'];
+                }
+
+                if (str_ends_with($type, 'QuotaFailure')) {
+                    foreach (($detail['violations'] ?? []) as $violation) {
+                        if (! is_array($violation)) {
+                            continue;
+                        }
+
+                        $quotaFailures[] = array_filter([
+                            'quota_metric' => $violation['quotaMetric'] ?? null,
+                            'quota_id' => $violation['quotaId'] ?? null,
+                            'quota_value' => $violation['quotaValue'] ?? null,
+                            'model' => $violation['quotaDimensions']['model'] ?? null,
+                            'location' => $violation['quotaDimensions']['location'] ?? null,
+                        ], fn (mixed $value): bool => $value !== null);
+                    }
+                }
+            }
+
+            $providerMessage = $providerError['message'] ?? null;
+            if (is_string($providerMessage)) {
+                $providerMessage = mb_substr(str_replace($apiKey, '[REDACTED]', $providerMessage), 0, 500);
+            }
+
+            Log::error('Gemini API request rejected', [
+                'model' => $model,
+                'tool' => 'google_search',
+                'http_status' => $response->status(),
+                'provider_code' => $providerError['code'] ?? $response->status(),
+                'provider_status' => $providerError['status'] ?? null,
+                'provider_message' => $providerMessage,
+                'retry_after' => $retryAfter,
+                'quota_failures' => $quotaFailures,
+            ]);
+        }
 
         if ($response->status() === 429) {
             throw new RuntimeException('Geminiの利用上限（無料枠・時間あたり・日あたり等）に達しています。Google AI StudioのRate limitsで、このプロジェクトのモデルと検索利用枠を確認してください。課金の設定はせず、まず利用枠の表示を確認してください。');
@@ -85,7 +148,16 @@ class CompanyResearchAssistant
             throw new RuntimeException('Gemini APIキーまたはプロジェクトの利用権限を確認してください。Google AI StudioのAPI Keysとプロジェクト状態を確認してください。');
         }
 
-        return $response->throw()->json();
+        if (! $response->successful()) {
+            throw new RuntimeException('Gemini APIがHTTP '.$response->status().'で応答しました。Renderログの安全な診断情報を確認してください。');
+        }
+
+        $body = $response->json();
+        if (! is_array($body)) {
+            throw new RuntimeException('Gemini APIから有効なJSON応答を取得できませんでした。');
+        }
+
+        return $body;
     }
 
     /** @param array<string, mixed> $response
