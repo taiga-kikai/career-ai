@@ -22,7 +22,7 @@
         <textarea id="document-raw-text" name="raw_text" required maxlength="50000" rows="12" placeholder="設問と回答をまとめて貼り付けてください" class="mt-2 w-full rounded-xl border border-[#e8ddce] bg-white px-4 py-3 text-sm font-normal leading-7 outline-none focus:border-[#c88b64]">{{ old('raw_text', $isEditing ? $document->raw_text : '') }}</textarea>
     </label>
     <div class="mt-3 flex flex-wrap items-center gap-3">
-        <button id="parse-document" type="button" class="rounded-xl bg-[#31574a] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#25483d]">AIで質問ごとに整理</button>
+        <button id="parse-document" type="button" aria-busy="false" class="inline-flex min-w-44 items-center justify-center gap-2 rounded-xl bg-[#31574a] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#25483d] disabled:cursor-wait disabled:opacity-75"><span id="parse-spinner" hidden aria-hidden="true" class="size-4 animate-spin rounded-full border-2 border-white/40 border-t-white"></span><span id="parse-button-label">AIで質問ごとに整理</span></button>
         <p class="text-xs leading-5 text-[#80684f]">Gemini設定時は、ボタンを押すと貼り付けた文章がGoogleに送信されます。無料枠では内容がGoogleのサービス改善に使われる場合があるため、氏名・住所などは除いてください。結果を確認・編集してから保存できます。</p>
     </div>
     <p id="parse-message" class="mt-2 min-h-5 text-xs text-[#80684f]" aria-live="polite">@if (!config('services.gemini.api_key'))Gemini未設定のため、今は見出しから簡易的に分割します。@endif</p>
@@ -45,6 +45,9 @@
     const editor = document.getElementById('question-editor');
     const message = document.getElementById('parse-message');
     const rawText = document.getElementById('document-raw-text');
+    const parseButton = document.getElementById('parse-document');
+    const parseSpinner = document.getElementById('parse-spinner');
+    const parseButtonLabel = document.getElementById('parse-button-label');
     const renumberQuestions = () => {
         [...editor.querySelectorAll('[data-question-card]')].forEach((card, index) => {
             card.querySelector('p').textContent = `質問 ${index + 1}`;
@@ -71,7 +74,7 @@
             renumberQuestions();
         }
     });
-    document.getElementById('parse-document').addEventListener('click', async (event) => {
+    parseButton.addEventListener('click', async (event) => {
         if (!rawText.value.trim()) {
             message.textContent = '先にES・書類の文章を貼り付けてください。';
             rawText.focus();
@@ -81,8 +84,10 @@
         if (hasAnswers && !window.confirm('今の質問・回答欄を整理結果で置き換えますか？')) return;
         const button = event.currentTarget;
         button.disabled = true;
-        button.textContent = '整理しています…';
-        message.textContent = '文章を整理しています。少し待ってね。';
+        button.setAttribute('aria-busy', 'true');
+        parseSpinner.hidden = false;
+        parseButtonLabel.textContent = '整理しています…';
+        message.textContent = 'Geminiに送信して整理しています。数秒かかることがあります。';
         try {
             const response = await fetch(document.getElementById('es-document-form').dataset.parseUrl, {
                 method: 'POST',
@@ -98,7 +103,9 @@
             message.textContent = error.message || '文章を整理できませんでした。';
         } finally {
             button.disabled = false;
-            button.textContent = 'AIで質問ごとに整理';
+            button.setAttribute('aria-busy', 'false');
+            parseSpinner.hidden = true;
+            parseButtonLabel.textContent = 'AIで質問ごとに整理';
         }
     });
 </script>
