@@ -13,12 +13,13 @@
     </section>
 </div>
 
-<section class="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+<section class="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
     @foreach (['main','summer','autumn'] as $category)
     <a href="{{ route('applications.preview', ['category' => $category]) }}" class="rounded-2xl border border-[#eadfce] bg-[#fffaf3] p-4 transition hover:-translate-y-0.5 hover:shadow-sm">
         <p class="text-xs text-[#80684f]">{{ $labels[$category] }}</p><p class="mt-1 text-2xl font-semibold {{ $colors[$category] }}">{{ $categoryCounts->get($category, 0) }}<span class="ml-1 text-sm font-medium">件</span></p>
     </a>
     @endforeach
+    <a href="{{ route('applications.preview') }}" class="rounded-2xl border border-[#eadfce] bg-[#fffaf3] p-4 transition hover:-translate-y-0.5 hover:shadow-sm"><p class="text-xs text-[#80684f]">応募予定企業</p><p class="mt-1 text-2xl font-semibold text-[#31574a]">{{ $plannedApplications }}<span class="ml-1 text-sm font-medium">社</span></p></a>
     <a href="{{ route('applications.preview') }}" class="rounded-2xl border border-[#eadfce] bg-[#fffaf3] p-4 transition hover:-translate-y-0.5 hover:shadow-sm"><p class="text-xs text-[#80684f]">結果待ち</p><p class="mt-1 text-2xl font-semibold text-[#846c3e]">{{ $resultWaiting->count() }}<span class="ml-1 text-sm font-medium">件</span></p></a>
 </section>
 
@@ -29,7 +30,6 @@
 </section>
 
 <div class="grid gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,.9fr)]">
-<div class="space-y-5">
 <section class="rounded-[1.75rem] border border-[#eadfce] bg-[#fffaf3] p-5 sm:p-6">
 <div class="mb-4 flex items-center justify-between"><div><p class="text-[11px] font-semibold tracking-[.14em] text-[#a66c48]">UP NEXT</p><h2 class="mt-1 text-lg font-semibold">これからの予定</h2></div><a href="{{ route('schedule.index') }}" class="text-xs font-semibold text-[#a66c48]">すべて見る →</a></div>
 <div class="divide-y divide-[#eee3d4]">
@@ -40,6 +40,7 @@
 @endforelse
 </div></section>
 
+<div class="space-y-5">
 <section class="rounded-[1.75rem] border border-[#eadfce] bg-[#fffaf3] p-5 sm:p-6">
 <p class="text-[11px] font-semibold tracking-[.14em] text-[#a66c48]">YOUR NEXT STEP</p><h2 class="mt-1 text-lg font-semibold">次にできること</h2>
 <div class="mt-4 space-y-3">

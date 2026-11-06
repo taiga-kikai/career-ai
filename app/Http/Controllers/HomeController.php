@@ -13,6 +13,7 @@ class HomeController extends Controller
     {
         $applications = CareerApplication::query()->withCount(['documents', 'research'])->get();
         $categoryCounts = $applications->countBy('category');
+        $plannedApplications = $applications->filter(fn (CareerApplication $application): bool => str_starts_with($application->status, '応募予定'))->count();
         $resultWaiting = $applications->filter(fn (CareerApplication $application): bool => str_contains($application->status, '結果待ち'))->values();
         $selectionEvents = ScheduleEvent::query()
             ->where('starts_at', '>=', now())
@@ -36,6 +37,7 @@ class HomeController extends Controller
 
         return view('home', [
             'categoryCounts' => $categoryCounts,
+            'plannedApplications' => $plannedApplications,
             'resultWaiting' => $resultWaiting,
             'selectionEvents' => $selectionEvents,
             'mascotMessage' => $mascotMessage,
