@@ -6,7 +6,7 @@
     </a>
     <p class="mb-2 mt-9 px-3 text-[10px] font-semibold tracking-[0.18em] text-[#a28c73]">MENU</p>
     <nav class="flex flex-col gap-1" aria-label="ページ">
-        @foreach ([['home.preview', '⌂', 'ホーム'], ['applications.preview', '▤', '企業・応募管理'], ['documents.index', '▧', 'ES・書類'], ['interviews.index', '◷', '面接対策'], ['research.index', '⌕', '企業研究'], ['schedule.index', '▦', 'スケジュール']] as [$routeName, $icon, $label])
+        @foreach ([['home.preview', '⌂', 'ホーム'], ['applications.preview', '▤', '企業・応募管理'], ['documents.index', '▧', 'ES・書類'], ['interviews.index', '◷', '面接対策'], ['research.index', '▤', '企業一覧・比較'], ['schedule.index', '▦', 'スケジュール']] as [$routeName, $icon, $label])
             @php($isActive = request()->routeIs($routeName) || ($routeName === 'applications.preview' && request()->routeIs('applications.*')) || ($routeName === 'research.index' && request()->routeIs('research.*')))
             <a href="{{ route($routeName) }}" @if ($isActive) aria-current="page" @endif class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition {{ $isActive ? 'bg-[#f3e5cf] font-semibold text-[#744c37]' : 'text-[#756452] hover:bg-[#f7efe3] hover:text-[#744c37]' }}">
                 <span class="grid size-[18px] place-items-center text-base" aria-hidden="true">{{ $icon }}</span>{{ $label }}

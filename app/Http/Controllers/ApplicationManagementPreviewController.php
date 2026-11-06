@@ -53,6 +53,7 @@ class ApplicationManagementPreviewController extends Controller
 
         $application = DB::transaction(function () use ($applicationData, $scheduleData): CareerApplication {
             $application = CareerApplication::query()->create($applicationData);
+            $this->syncCompanyProfile($application);
             $this->createLinkedSchedule($application, $scheduleData);
 
             return $application;
@@ -69,6 +70,7 @@ class ApplicationManagementPreviewController extends Controller
 
         DB::transaction(function () use ($application, $applicationData, $scheduleData): void {
             $application->update($applicationData);
+            $this->syncCompanyProfile($application);
             $this->createLinkedSchedule($application, $scheduleData);
         });
 
@@ -171,6 +173,16 @@ class ApplicationManagementPreviewController extends Controller
         abort_unless(app()->environment('local') || config('services.career_ai.web_enabled'), 404);
     }
 
+    private function syncCompanyProfile(CareerApplication $application): void
+    {
+        $profile = auth()->user()->companyProfiles()->firstOrCreate([
+            'company_name' => trim($application->company),
+        ]);
+
+        $application->companyProfile()->associate($profile);
+        $application->save();
+    }
+
     /** @return array{event_type: string, confirmation_status: string, starts_at: string, ends_at: string|null}|null */
     private function validatedSchedule(Request $request): ?array
     {
@@ -238,8 +250,6 @@ class ApplicationManagementPreviewController extends Controller
                 'filter' => $this->statusFilter($statusGroup, $application->status),
                 'detail' => $application->detail,
                 'resultDate' => $application->result_date?->format('Y-m-d'),
-                'compensationSummary' => $application->compensation_summary,
-                'compensationResearchedAt' => $application->compensation_researched_at?->toIso8601String(),
             ];
         })->all();
     }

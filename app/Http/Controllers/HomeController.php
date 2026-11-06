@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\CareerApplication;
+use App\Models\CompanyProfile;
 use App\Models\ScheduleEvent;
 use App\Services\NeonUsageService;
 use Illuminate\Contracts\View\View;
@@ -11,7 +12,7 @@ class HomeController extends Controller
 {
     public function __invoke(NeonUsageService $neonUsage): View
     {
-        $applications = CareerApplication::query()->withCount(['documents', 'research'])->get();
+        $applications = CareerApplication::query()->withCount('documents')->get();
         $categoryCounts = $applications->countBy('category');
         $plannedApplications = $applications->filter(fn (CareerApplication $application): bool => str_starts_with($application->status, '応募予定'))->count();
         $resultWaiting = $applications->filter(fn (CareerApplication $application): bool => str_contains($application->status, '結果待ち'))->values();
@@ -43,9 +44,16 @@ class HomeController extends Controller
             'mascotMessage' => $mascotMessage,
             'pendingDocuments' => $pendingDocuments,
             'documentsThisWeek' => $documentsThisWeek,
-            'researchCount' => $applications->filter(fn (CareerApplication $application): bool => $application->research_count > 0)->count(),
             'totalApplications' => $applications->count(),
             'preparedDocuments' => $applications->sum('documents_count'),
+            'companyProfileCount' => CompanyProfile::query()->where(function ($query): void {
+                foreach (['initial_salary_yen', 'average_annual_salary_yen', 'average_salary_30s_yen', 'average_overtime_hours', 'annual_holidays_days', 'paid_leave_rate', 'housing_allowance_yen'] as $field) {
+                    $query->orWhereNotNull($field);
+                }
+                foreach (['benefits', 'work_locations', 'notes'] as $field) {
+                    $query->orWhere(fn ($textQuery) => $textQuery->whereNotNull($field)->where($field, '<>', ''));
+                }
+            })->count(),
             'neonUsage' => $neonUsage->forUser(auth()->user()),
         ]);
     }

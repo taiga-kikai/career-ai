@@ -30,6 +30,11 @@ class User extends Authenticatable
         return $this->hasMany(CareerApplication::class);
     }
 
+    public function companyProfiles(): HasMany
+    {
+        return $this->hasMany(CompanyProfile::class);
+    }
+
     public function researchConversations(): HasMany
     {
         return $this->hasMany(ResearchConversation::class);

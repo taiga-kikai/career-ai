@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-#[Fillable(['user_id', 'category', 'company', 'program', 'status', 'detail', 'result_date', 'compensation_summary', 'compensation_researched_at'])]
+#[Fillable(['user_id', 'category', 'company', 'company_profile_id', 'program', 'status', 'detail', 'result_date', 'compensation_summary', 'compensation_researched_at'])]
 class CareerApplication extends Model
 {
     use HasFactory;
@@ -24,6 +24,11 @@ class CareerApplication extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function companyProfile(): BelongsTo
+    {
+        return $this->belongsTo(CompanyProfile::class, 'company_profile_id');
     }
 
     public function documents(): HasMany

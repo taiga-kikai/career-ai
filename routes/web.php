@@ -3,12 +3,11 @@
 use App\Http\Controllers\ApplicationDocumentController;
 use App\Http\Controllers\ApplicationManagementPreviewController;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\CompanyResearchController;
+use App\Http\Controllers\CompanyDirectoryController;
 use App\Http\Controllers\GoogleCalendarController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InterviewPreparationController;
 use App\Http\Controllers\InvitationController;
-use App\Http\Controllers\ResearchChatController;
 use App\Http\Controllers\ScheduleController;
 use Illuminate\Support\Facades\Route;
 
@@ -32,7 +31,6 @@ Route::middleware('auth')->group(function (): void {
     Route::patch('/applications/{application}', [ApplicationManagementPreviewController::class, 'update'])->name('applications.update');
     Route::delete('/applications/{application}', [ApplicationManagementPreviewController::class, 'destroy'])->name('applications.destroy');
     Route::delete('/applications/status-options/{statusOption}', [ApplicationManagementPreviewController::class, 'destroyStatusOption'])->name('applications.status-options.destroy');
-    Route::post('/applications/{application}/compensation-summary', [CompanyResearchController::class, 'compensationSummary'])->middleware('throttle:5,1')->name('applications.compensation-summary');
 
     Route::get('/documents', [ApplicationDocumentController::class, 'index'])->name('documents.index');
     Route::get('/documents/create', [ApplicationDocumentController::class, 'create'])->name('documents.create');
@@ -48,11 +46,9 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/interviews/company/{application}', [InterviewPreparationController::class, 'save'])->name('interviews.save');
     Route::delete('/interviews/company/{application}', [InterviewPreparationController::class, 'destroy'])->name('interviews.destroy');
 
-    Route::get('/research', [ResearchChatController::class, 'index'])->name('research.index');
-    Route::post('/research/chat', [ResearchChatController::class, 'send'])->middleware('throttle:8,1')->name('research.chat');
-    Route::get('/research/company/{application}', [CompanyResearchController::class, 'show'])->name('research.show');
-    Route::post('/research/company/{application}', [CompanyResearchController::class, 'save'])->name('research.save');
-    Route::delete('/research/{research}', [CompanyResearchController::class, 'destroy'])->name('research.destroy');
+    Route::get('/research', [CompanyDirectoryController::class, 'index'])->name('research.index');
+    Route::get('/research/company/{application}/edit', [CompanyDirectoryController::class, 'edit'])->name('research.edit');
+    Route::put('/research/profile/{profile}', [CompanyDirectoryController::class, 'update'])->name('research.profile.update');
 
     Route::get('/schedule', [ScheduleController::class, 'index'])->name('schedule.index');
     Route::get('/schedule/create', [ScheduleController::class, 'create'])->name('schedule.create');

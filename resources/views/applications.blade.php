@@ -104,7 +104,7 @@
                         <label id="application-schedule-end-wrap" class="block text-xs font-semibold text-[#685442]">終了日時（任意）<input name="schedule_ends_at" type="datetime-local" class="mt-1.5 w-full rounded-xl border border-[#e8ddce] bg-white px-3.5 py-3 text-sm font-normal outline-none focus:border-[#c88b64]"></label>
                     </div>
                 </section>
-                <label class="block text-xs font-semibold text-[#685442]">詳細・メモ（任意）<textarea id="application-detail" name="detail" rows="3" maxlength="3000" class="mt-1.5 w-full resize-y rounded-xl border border-[#e8ddce] bg-white px-3.5 py-3 text-sm font-normal outline-none focus:border-[#c88b64] focus:ring-2 focus:ring-[#c88b64]/15"></textarea></label><section id="compensation-panel" hidden class="rounded-2xl border border-[#eadfce] bg-[#f8efdf] p-4"><div class="flex flex-wrap items-center justify-between gap-2"><div><h3 class="text-sm font-semibold">初任給・待遇</h3><p class="mt-1 text-[11px] text-[#80684f]">AIが公開情報を探して要点を整理します。</p></div><button id="compensation-fetch" type="button" class="rounded-xl bg-[#31574a] px-3 py-2 text-xs font-semibold text-white">AIで調べる</button></div><div id="compensation-result" class="mt-3 space-y-2 text-xs leading-5 text-[#685442]"></div><a id="ask-company-ai" href="{{ route('research.index') }}" class="mt-3 inline-flex text-xs font-semibold text-[#a66c48] hover:underline">AIに追加で聞く →</a></section>
+                <label class="block text-xs font-semibold text-[#685442]">詳細・メモ（任意）<textarea id="application-detail" name="detail" rows="3" maxlength="3000" class="mt-1.5 w-full resize-y rounded-xl border border-[#e8ddce] bg-white px-3.5 py-3 text-sm font-normal outline-none focus:border-[#c88b64] focus:ring-2 focus:ring-[#c88b64]/15"></textarea></label>
             </div>
             <div class="mt-6 flex items-center justify-between gap-2"><button id="application-delete" type="button" hidden class="rounded-xl border border-[#e7b9a8] px-4 py-2.5 text-sm font-semibold text-[#a94736] hover:bg-[#fff0eb]">応募先を削除</button><div class="flex justify-end gap-2"><button id="dialog-cancel" type="button" class="rounded-xl border border-[#e8ddce] px-4 py-2.5 text-sm font-medium text-[#685442] hover:bg-[#f7efe3]">キャンセル</button><button type="submit" class="rounded-xl bg-[#31574a] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#25483d]">保存</button></div></div>
         </form>
@@ -168,11 +168,6 @@
         const applicationScheduleStartLabel = document.getElementById('application-schedule-start-label');
         const applicationScheduleEndWrap = document.getElementById('application-schedule-end-wrap');
         let activeCategory = 'main';
-        let activeApplicationId = null;
-        const compensationPanel = document.getElementById('compensation-panel');
-        const compensationResult = document.getElementById('compensation-result');
-        const compensationFetch = document.getElementById('compensation-fetch');
-        const askCompanyAi = document.getElementById('ask-company-ai');
         let activeFilter = 'all';
 
         const syncScheduleFields = () => {
@@ -436,9 +431,6 @@
             applicationForm.reset();
             addToSchedule.checked = false;
             syncScheduleFields();
-            activeApplicationId = null;
-            compensationPanel.hidden = true;
-            compensationResult.replaceChildren();
             applicationForm.action = applicationForm.dataset.storeUrl;
             methodOverride.disabled = true;
             applicationDeleteButton.hidden = true;
@@ -459,13 +451,6 @@
             applicationForm.reset();
             addToSchedule.checked = false;
             syncScheduleFields();
-            activeApplicationId = row.dataset.id;
-            compensationPanel.hidden = false;
-            renderCompensationSummary(row.dataset.compensationSummary);
-            const researchUrl = new URL("{{ route('research.index') }}", window.location.href);
-            researchUrl.searchParams.set('company', row.dataset.company);
-            researchUrl.searchParams.set('category', row.dataset.category);
-            askCompanyAi.href = researchUrl.toString();
             applicationForm.action = `${applicationForm.dataset.updateUrl}/${row.dataset.id}`;
             methodOverride.disabled = false;
             applicationDeleteForm.action = `${applicationForm.dataset.updateUrl}/${row.dataset.id}`;
@@ -486,48 +471,12 @@
             dialog.showModal();
         };
 
-        const renderCompensationSummary = (serialized) => {
-            compensationResult.replaceChildren();
-            if (!serialized || serialized === 'null') return;
-            let result;
-            try { result = JSON.parse(serialized); } catch { return; }
-            const labels = { initial_salary: '初任給', salary_structure: '給与内訳', bonus_and_raise: '賞与・昇給', benefits: '福利厚生', holidays: '休日', work_location: '勤務地', work_hours: '勤務時間', notes: '補足' };
-            Object.entries(result.summary || {}).forEach(([key, value]) => {
-                const item = document.createElement('p');
-                item.className = 'rounded-xl bg-white/80 px-3 py-2';
-                const strong = document.createElement('strong');
-                strong.textContent = (labels[key] || key) + '：';
-                item.append(strong, document.createTextNode(value));
-                compensationResult.append(item);
-            });
-            (result.sources || []).forEach((source) => {
-                if (!/^https?:\/\//.test(source.url || '')) return;
-                const link = document.createElement('a');
-                link.href = source.url; link.target = '_blank'; link.rel = 'noopener noreferrer';
-                link.className = 'block text-[#a66c48] underline'; link.textContent = source.title || source.url;
-                compensationResult.append(link);
-            });
-        };
-        compensationFetch.addEventListener('click', async () => {
-            const row = rows.find((item) => item.dataset.id === activeApplicationId);
-            if (!row) return;
-            compensationFetch.disabled = true; compensationFetch.textContent = '調査中…';
-            try {
-                const response = await fetch(row.dataset.summaryUrl, { method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json' } });
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.message || '調査できませんでした。');
-                row.dataset.compensationSummary = JSON.stringify({ summary: data.summary, sources: data.sources });
-                renderCompensationSummary(row.dataset.compensationSummary);
-            } catch (error) {
-                compensationResult.textContent = error.message || '調査に失敗しました。';
-            } finally { compensationFetch.disabled = false; compensationFetch.textContent = 'もう一度調べる'; }
-        });
         document.getElementById('application-add').addEventListener('click', openAddDialog);
         document.getElementById('dialog-close').addEventListener('click', () => dialog.close());
         document.getElementById('dialog-cancel').addEventListener('click', () => dialog.close());
         applicationDeleteButton.addEventListener('click', () => {
             const company = companyField.value.trim();
-            if (window.confirm(`「${company}」と、紐づくES・書類・面接準備・企業研究を削除しますか？予定は残りますが企業との関連は外れます。この操作は取り消せません。`)) {
+            if (window.confirm(`「${company}」の応募先と、紐づくES・書類・面接準備を削除しますか？予定は残ります。この操作は取り消せません。`)) {
                 applicationDeleteForm.requestSubmit();
             }
         });

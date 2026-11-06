@@ -26,7 +26,7 @@
 <section class="mb-6 grid gap-4 sm:grid-cols-3">
     <a href="{{ route('applications.preview') }}" class="rounded-2xl border border-[#eadfce] bg-[#fffaf3] p-4"><p class="text-xs text-[#80684f]">応募先合計</p><p class="mt-1 text-xl font-semibold">{{ $totalApplications }}<span class="ml-1 text-sm">社・件</span></p></a>
     <a href="{{ route('documents.index') }}" class="rounded-2xl border border-[#eadfce] bg-[#fffaf3] p-4"><p class="text-xs text-[#80684f]">ES・書類</p><p class="mt-1 text-xl font-semibold">{{ $pendingDocuments->count() }}<span class="ml-1 text-sm">件 登録済み</span></p><p class="mt-1 text-[11px] text-[#a66c48]">今週更新 {{ $documentsThisWeek->count() }}件</p></a>
-    <a href="{{ route('research.index') }}" class="rounded-2xl border border-[#eadfce] bg-[#fffaf3] p-4"><p class="text-xs text-[#80684f]">企業研究</p><p class="mt-1 text-xl font-semibold">{{ $researchCount }}<span class="ml-1 text-sm">社 記録済み</span></p><p class="mt-1 text-[11px] text-[#a66c48]">AIに質問する →</p></a>
+    <a href="{{ route('research.index') }}" class="rounded-2xl border border-[#eadfce] bg-[#fffaf3] p-4"><p class="text-xs text-[#80684f]">企業情報・比較</p><p class="mt-1 text-xl font-semibold">{{ $companyProfileCount }}<span class="ml-1 text-sm">社 登録済み</span></p><p class="mt-1 text-[11px] text-[#a66c48]">項目別ランキングを見る →</p></a>
 </section>
 
 <div class="grid gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,.9fr)]">
@@ -44,7 +44,7 @@
 <section class="rounded-[1.75rem] border border-[#eadfce] bg-[#fffaf3] p-5 sm:p-6">
 <p class="text-[11px] font-semibold tracking-[.14em] text-[#a66c48]">YOUR NEXT STEP</p><h2 class="mt-1 text-lg font-semibold">次にできること</h2>
 <div class="mt-4 space-y-3">
-<a href="{{ route('research.index') }}" class="block rounded-2xl bg-[#f8efdf] p-4"><p class="text-sm font-semibold">気になる企業を調べる</p><p class="mt-1 text-xs text-[#80684f]">最新情報を検索し、出典を確認できます。</p></a>
+<a href="{{ route('research.index') }}" class="block rounded-2xl bg-[#f8efdf] p-4"><p class="text-sm font-semibold">登録企業を比較する</p><p class="mt-1 text-xs text-[#80684f]">自分で入力した待遇や条件を項目別に見比べられます。</p></a>
 <a href="{{ route('applications.preview') }}" class="block rounded-2xl bg-[#f7efe3] p-4"><p class="text-sm font-semibold">応募状況を更新する</p><p class="mt-1 text-xs text-[#80684f]">企業情報と選考状況を管理します。</p></a>
 <a href="{{ route('documents.index') }}" class="block rounded-2xl bg-[#f7efe3] p-4"><p class="text-sm font-semibold">ES・書類を整理する</p><p class="mt-1 text-xs text-[#80684f]">提出予定や記入内容を確認できます。</p></a>
 </div><p class="mt-5 text-xs text-[#a28c73]">準備済みの書類 {{ $preparedDocuments }}件</p>
