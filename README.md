@@ -1,6 +1,6 @@
 # Career AI
 
-新卒就活の企業・応募管理、企業情報の比較、ES・書類、面接対策、スケジュールをまとめるLaravel製Webアプリです。画面はスマートフォンとPCの両方に対応しています。
+新卒就活の情報をまとめて管理する、スマートフォン・PC対応のWebアプリです。企業への応募状況、ES、面接準備、予定を一か所で整理できます。
 
 ## クイックリンク
 
@@ -12,15 +12,44 @@
 | Google AI Studio（Gemini API） | [AI Studioを開く](https://aistudio.google.com/prompts/new_chat) |
 | Google Cloud（Calendar API・OAuthの監査ログ） | [監査ログを開く](https://console.cloud.google.com/logs/query;query=%2528logName%20%3D%20%22projects%2Fproject-41e84ac5-fd09-440b-b0f%2Flogs%2Fcloudaudit.googleapis.com%252Factivity%22%20OR%20logName%20%3D%20%22projects%2Fproject-41e84ac5-fd09-440b-b0f%2Flogs%2Fcloudaudit.googleapis.com%252Fdata_access%22%20OR%20labels.activity_type_name:*%2529;cursorTimestamp=2026-11-04T17:18:01.898920Z;duration=P7D?authuser=1&project=project-41e84ac5-fd09-440b-b0f) |
 
-RenderとNeonの管理画面を開くには、それぞれのアカウントへのログインとプロジェクト権限が必要です。このリンクは管理画面への入口であり、ログイン情報や権限を共有するものではありません。公開リポジトリにはパスワード、APIキー、DB接続URLなどの秘密情報を登録しないでください。
+Render、Neon、Google Cloudの管理画面には、該当アカウントへのログインと必要な権限が必要です。リンクを知っているだけでアクセス権が得られることはありません。
 
-## ローカル開発
+## 主な機能
 
-必要なもの: PHP 8.3以上、Composer、Node.js/npm、MySQL 8.4（またはSQLite）。
+- **企業・応募管理**：本選考、夏インターン、秋・冬インターンごとに企業と選考状況を管理します。
+- **ES・書類**：応募先ごとに文章を保存し、質問と回答を整理・編集できます。Gemini APIを設定すると、貼り付けた文章の設問整理を補助します。
+- **面接対策**：企業ごとに面接準備の内容を記録します。
+- **スケジュール**：選考予定や提出締切を管理します。設定すればGoogleカレンダーにも登録できます。
+- **企業情報・比較**：自分で入力した給与・休日などを企業ごとに保存し、項目別に比較できます。企業情報の自動検索や総合ランキングは行いません。
+- **ホーム画面**：応募状況、締切、直近の予定をまとめて確認できます。
+- **招待制アカウント**：招待リンクからアカウントを作成します。
+
+企業、ES、面接準備、予定、企業プロフィールはアカウントごとに分けて保存されます。
+
+## デモの利用について
+
+公開デモは共有のサンプルアカウントで動作します。デモに入力した内容は、他のデモ利用者に見える場合があり、削除・初期化されることがあります。実際の就活情報、氏名、住所、連絡先、パスワードなどは入力しないでください。
+
+GeminiによるES整理を使うと、入力した文章がGemini APIへ送信されます。利用する場合は、個人情報や送信したくない内容を除いてください。Googleカレンダー連携は個人アカウント向けです。共有デモアカウントでは利用できません。
+
+## ローカルで起動する
+
+### 必要なもの
+
+- Git
+- PHP 8.3以上と、使用するDBに対応したPHP拡張
+- Composer
+- Node.jsとnpm
+- SQLite、またはMySQL 8.4以上
+
+この手順はWindows PowerShell向けです。SQLiteを使う場合、PHPの`pdo_sqlite`拡張が必要です。MySQLを使う場合は、SQLiteファイルを作成する行を省略し、下記のDB設定をマイグレーション前に行ってください。
 
 ```powershell
+git clone https://github.com/taiga-kikai/career-ai.git
+cd career-ai
 composer install
-Copy-Item .env.example .env
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
+New-Item -ItemType File -Path database/database.sqlite -Force | Out-Null
 php artisan key:generate
 npm.cmd install
 npm.cmd run build
@@ -28,57 +57,96 @@ php artisan migrate --seed
 php artisan serve
 ```
 
-### PCでローカル版を起動してテスト
+起動後、同じPCのブラウザーで [http://127.0.0.1:8000](http://127.0.0.1:8000) を開きます。ローカル環境ではログイン画面の「デモでログイン」からサンプルデータを確認できます。サーバーを止めるときはPowerShellで`Ctrl+C`を押します。
 
-初期設定が終わった後は、毎回以下の手順で起動します。
+### MySQLを使う場合
 
-1. VS Codeで `C:\Users\taiga\career-ai` フォルダーを開く
-2. メニューの「ターミナル」→「新しいターミナル」を選ぶ
-3. PowerShellでプロジェクトフォルダーにいることを確認し、次を実行する
+MySQLに開発用データベースを作成し、`.env`のDB設定を次のようにします。データベース名・ユーザー名・パスワードは自分の環境に合わせてください。
 
-```powershell
-php artisan serve
+```dotenv
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=career_ai
+DB_USERNAME=your_user
+DB_PASSWORD=your_password
 ```
 
-4. 表示されたら、同じPCのブラウザーで [http://127.0.0.1:8000/](http://127.0.0.1:8000/) を開く
+設定を変更した後は、次を実行してからマイグレーションします。
 
-PowerShellのウィンドウは起動中そのままにします。停止するときはターミナルで `Ctrl+C` を押します。ローカル版は `.env` のDB設定を使うため、`DB_CONNECTION=mysql` ならローカルMySQLに接続し、Render上の公開版やNeonとは別に動作します。
-
-`.env` にGemini APIキーを設定すると、ES・書類の質問と回答をAIで整理できます。企業情報の比較はユーザーが入力した値を使い、AI検索は行いません。Google Calendar連携はOAuthの認証情報を設定したローカル環境で有効にしてください。`.env` と実データベースはGitに含めません。
-
-## アカウントとデータ
-
-招待リンクからアカウントを作成します。企業、企業プロフィール、ES、面接対策、予定はアカウントごとに分離して保存されます。公開デモは共有サンプルアカウントで、入力データは他のデモ利用者から見える場合があり、消去されることがあります。デモには個人情報や実際の就活情報を入力しないでください。
-
-## Render無料デモ
-
-公開URL: [https://career-ai-taiga-demo.onrender.com](https://career-ai-taiga-demo.onrender.com)
-
-リポジトリ直下の `render.yaml` を使うBlueprintデプロイに対応しています。Render側でGitHubリポジトリを選択し、デプロイ後に必要なら `GEMINI_API_KEY` をサービスの環境変数へ登録してください。Google Calendar連携を使うには、Renderの秘密環境変数 `GOOGLE_CALENDAR_CLIENT_ID` と `GOOGLE_CALENDAR_CLIENT_SECRET` にGoogle OAuthクライアント情報を設定し、Google Cloud Consoleの承認済みリダイレクトURIに `https://career-ai-taiga-demo.onrender.com/google-calendar/callback` を登録します。締切・予定の色ラベル（ユーカリ・トマト・グラファイト）の利用にはカレンダー情報の更新権限も必要です。この更新を取り込むため、既に連携済みの場合は一度連携を解除してから再連携してください。Google OAuthの公開ステータスがテスト中の場合、テストユーザーに追加したGoogleアカウントのみ連携でき、認可は7日で期限切れになります。一般公開して期限制限をなくすには、OAuthアプリ公開とGoogleの必要な確認手続きが別途必要です。共有デモアカウントでは個人のGoogleカレンダーを誤接続しないよう、この連携機能を使用できません。個人アカウントでログインして連携してください。PostgreSQLを使う場合は、Renderの秘密環境変数 `DB_URL` に接続URLを設定します。`DB_URL` がなければ一時SQLiteを使います。
-
-無料サービスはアクセスがないと停止し、次回表示時に起動待ちが発生します。初期設定では一時SQLiteを使うため、再起動・再デプロイでデータが消える可能性があります。個人データを長期保存する場合はNeonなど外部PostgreSQLを用意し、Renderの DB_URL に秘密情報として設定してください。無料プランには容量・利用量の上限やバックアップ条件があるため、重要データは別途定期保存してください。
-
-## ローカルMySQLからPostgreSQLへの一回移行
-
-先にPostgreSQLの接続先URLをローカルの `.env` に `CAREER_AI_TRANSFER_DB_URL` として設定します。既存の `DB_CONNECTION=mysql` は変更しません。接続先URLをGitHubやチャットへ貼らないでください。設定後に以下を実行します。
-
-~~~powershell
+```powershell
 php artisan config:clear
-php artisan migrate --database=career_ai_transfer
-php artisan career-ai:transfer-account --all-users
-~~~
+php artisan migrate --seed
+```
 
-移行先に同じメールアドレスのアカウントがある場合は、空のデモアカウントだけ再利用し、それ以外は重複防止のためコピー全体を中止します。既存デモアカウントにデータや招待がある場合も中止します。全ユーザーと紐づく就活データ、招待情報をコピーします。パスワードハッシュは引き継ぎますが、ログインセッション、Remember token、Google Calendarの暗号化認証情報、予定のGoogleイベントIDは移しません。Google Calendarは移行後に再連携してください。件数を確認し、移行が終わったらローカル `.env` の一時URLを削除し、Renderの `DB_URL` を同じPostgreSQLに設定します。
-## Neon利用状況カード
+## 外部サービスの設定
 
-ホームの利用状況カードは、CAREER_AI_OWNER_EMAILに設定したアカウントだけに表示されます。保存量はPostgreSQLへ接続中にページを開くか「更新」を押すと取得します。FreeプランではNeonのCU実績APIを使えないため、Career AI経由の認証済みリクエストでDB接続時刻を記録し、最小CUと自動停止時間を仮定したCU推定ゲージを表示します。Neon管理画面や他のアプリなどCareer AI以外からの利用、実際のオートスケール量は含まれないため、推定値として扱い、実測はNeon管理画面で確認してください。有料プランでは必要に応じてRenderの環境変数NEON_API_KEY、NEON_ORG_ID、NEON_PROJECT_IDを設定すると、Neon APIからCU実績を読み込みます（約15分間隔）。これらは秘密情報なのでGitHubへ登録しません。
+必要な機能だけ設定してください。秘密情報は`.env`またはホスティングサービスの環境変数に保存し、GitHubへ登録しないでください。
 
-FreeプランのCUゲージと残り稼働時間は、Career AIのDB接続時間を `NEON_ESTIMATED_MIN_CU`（初期値0.25 CU）と `NEON_ESTIMATED_SUSPEND_SECONDS`（初期値300秒）で概算した値です。月のCU上限は `NEON_MONTHLY_CU_LIMIT`（初期値100）です。推定器は認証済みのアプリリクエストごとに月次記録を更新するため、Neonへ小さな追加書き込みが発生します。容量ゲージはDB内部の論理容量の目安で、Neonの課金上の正確なストレージ使用量とは異なる場合があります。DB内の保存量を減らしてもCU使用量が直接減るわけではありません。プランや上限の変更はNeon管理画面で行います。
+| 環境変数 | 用途 |
+| --- | --- |
+| `GEMINI_API_KEY` | ES・書類の設問整理 |
+| `GEMINI_MODEL` | Geminiの使用モデル。未設定時はアプリの既定値を使います |
+| `GOOGLE_CALENDAR_CLIENT_ID`、`GOOGLE_CALENDAR_CLIENT_SECRET` | Googleカレンダー連携 |
+| `GOOGLE_CALENDAR_REDIRECT_URI` | Google OAuthのコールバックURL |
+| `DB_URL` | PostgreSQLの接続URL。RenderでNeonを使う場合に設定します |
+| `CAREER_AI_OWNER_EMAIL` | ホームのDB・CU利用状況カードを表示するアカウント |
 
-## 開発DBと公開DB
+Googleカレンダーを使うには、Google Cloud側でOAuthクライアントを設定し、アプリのURLに対応するコールバックURLを登録してください。Gemini APIキーやDB接続URLは、公開リポジトリのファイル・Issue・スクリーンショットへ載せないでください。
 
-ローカル開発時は `.env` の `DB_CONNECTION=mysql` とローカルMySQLを使い、RenderだけNeonのPostgreSQLに接続する構成にできます。NeonのCU時間はNeonのコンピュートが稼働した時間に応じて消費されるため、ローカルでMySQLだけを使っている間は開発操作でNeonのCU時間は増えません。Neonの容量・CU表示を確認するときや公開アプリへアクセスしたときはNeonを利用します。Neon Freeはプロジェクトごとに月100 CU時間、1 GBのDB容量が含まれます。アプリ内の上限表示もこの値を初期値として設定しています。
+## 公開デモの構成
 
-## バージョン
+RenderのBlueprint設定はリポジトリ直下の`render.yaml`にあります。GitHubの`main`ブランチをRenderへ接続すると、更新をデプロイできます。
 
-リリースはGitタグで管理します。初回公開版は `v1.00`、SQLiteの移行修正版は `v1.01`、Renderヘルスチェック修正版は `v1.02`、Renderの暗号化キー修正版は `v1.03`、公開デモURLをREADMEに追加した版は `v1.04`、RenderのHTTPS表示・ログイン送信修正版は `v1.05`、Renderから外部PostgreSQLへ接続する対応版は `v1.06`、本人アカウントのデータ移行コマンドを追加した版は v1.07、ホームのNeon利用状況カードを追加した版は `v1.08`、ローカルMySQLから全アカウントをNeonへ移行できるようにした版は `v1.09`、Neonが作る空のデモアカウントを再利用する修正版は `v1.10`、公開Render用Google Calendar OAuth設定を追加した版は `v1.11`、Freeプラン向けCU推定ゲージを追加した版は `v1.12`、Render・Neonの管理画面リンクをREADMEに整理した版は `v1.13`、PCでのローカル起動手順をREADMEに追加した版は `v1.14`、Google AI StudioとGoogle Cloud監査ログへのリンクを追加した版は `v1.15`、予定の種類に応じて日時入力を切り替えるようにした版は `v1.16`、企業・応募管理とスケジュールの相互リンクを追加した版は `v1.17`、結果待ちの結果予定日と締切・予定・確定の色分けを追加した版は `v1.18`、複数日予定の連続表示を試行した版は `v1.19`、カレンダー配置を調整した版は `v1.20`、カレンダー表示をv1.18へ戻した版は `v1.21`、日付マスを維持してグレーの複数日予定バーだけを横断表示する試行版は `v1.22`、複数日予定バーを保留してカレンダーをv1.18へ戻した版は `v1.23`、ホームのDB/CUカード移動と締切・予定を話すミーアキャット吹き出しを追加した版は `v1.24`、応募予定企業数の表示とホーム下段の左右配置を修正した版は `v1.25`、Gemini APIのHTTPエラー・プロバイダーコード・再試行時間・検索ツールのクォータ詳細を安全にRenderログへ記録する版は `v1.26`、番号付きESの質問文と回答をローカルでも分離し、ES用Gemini API失敗の詳細を安全に記録する版は `v1.27`、ES整理中のスピナー表示と二重送信防止を追加した版は `v1.28`、企業研究AIを削除してアカウント別企業プロフィール・項目別ランキング・手入力編集へ切り替えた版は `v1.29` です。APIキーやES本文はログに含めません。今後も変更内容を記録してタグを追加します。
+`DB_URL`を設定しない場合、Renderでは一時SQLiteを使います。このデータは再起動や再デプロイで失われる可能性があります。長期保存が必要な環境ではPostgreSQLを設定してください。無料プランの稼働時間・容量・停止条件は提供元により変わるため、最新の上限とバックアップ条件を各管理画面で確認してください。ホームの容量表示はアプリが取得したDB論理容量です。FreeプランのCU時間はCareer AIからのDB接続記録を使った推定値で、Neon管理画面や他のアプリからの利用は含まれません。実際の使用量はNeon管理画面で確認してください。
+
+## 開発時のDBと公開DB
+
+ローカル版は`.env`で選んだデータベースを使い、公開版とは別に動作します。たとえば、ローカルではMySQL、RenderではNeonのPostgreSQLを使う構成にできます。この場合、ローカルでの操作は公開DBへ自動同期されません。
+
+## バージョン履歴
+
+変更はGitのコミットとタグで記録しています。リリースタグはGitHubの[Tags](https://github.com/taiga-kikai/career-ai/tags)から確認できます。
+
+<details>
+<summary>v1.00〜v1.30の変更内容</summary>
+
+| バージョン | 主な変更 |
+| --- | --- |
+| v1.00 | 初回公開版 |
+| v1.01 | SQLiteのマイグレーションを修正 |
+| v1.02 | Renderのヘルスチェックを修正 |
+| v1.03 | Renderの暗号化キー設定を修正 |
+| v1.04 | 公開デモURLをREADMEに追加 |
+| v1.05 | HTTPS表示とログイン送信を修正 |
+| v1.06 | Renderから外部PostgreSQLへ接続 |
+| v1.07 | アカウントデータの移行コマンドを追加 |
+| v1.08 | ホームにNeon利用状況カードを追加 |
+| v1.09 | 全アカウントのデータをNeonへ移行可能に変更 |
+| v1.10 | 移行先にある空のデモアカウントを再利用 |
+| v1.11 | Render向けGoogle Calendar OAuth設定を追加 |
+| v1.12 | Neon Free向けCU推定ゲージを追加 |
+| v1.13 | Render・Neonの管理画面リンクを整理 |
+| v1.14 | PCでのローカル起動手順を追加 |
+| v1.15 | Google AI StudioとGoogle Cloud監査ログのリンクを追加 |
+| v1.16 | 予定の種類に応じた日時入力に変更 |
+| v1.17 | 企業・応募管理とスケジュールを連携 |
+| v1.18 | 結果待ちの予定日とカレンダーの色分けを追加 |
+| v1.19 | 複数日予定の連続表示を試行 |
+| v1.20 | カレンダー配置を調整 |
+| v1.21 | カレンダー表示をv1.18の形式に復帰 |
+| v1.22 | 複数日予定バーの表示を試行 |
+| v1.23 | 複数日予定バーを保留し、カレンダーをv1.18の形式に復帰 |
+| v1.24 | ホームのDB/CUカード配置とミーアキャットの案内を追加 |
+| v1.25 | 応募予定数とホームのカード配置を調整 |
+| v1.26 | Gemini APIエラーの安全なログ記録を追加 |
+| v1.27 | ES設問整理の改善とAPIエラー記録を追加 |
+| v1.28 | ES整理中の表示と二重送信防止を追加 |
+| v1.29 | 企業研究AIを終了し、企業情報の編集・項目別ランキングを追加 |
+| v1.30 | READMEを公開向けに整理 |
+
+</details>
+
+## ライセンス
+
+このリポジトリには`LICENSE`ファイルがありません。公開リポジトリであることは、ソフトウェアの再利用を許可するライセンスがあることを意味しません。
