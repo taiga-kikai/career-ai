@@ -20,6 +20,17 @@ class HomeController extends Controller
             ->orderBy('starts_at')
             ->limit(12)
             ->get();
+        $deadlineEvent = ScheduleEvent::query()
+            ->whereIn('event_type', ['es_deadline', 'aptitude_deadline'])
+            ->where('starts_at', '>=', now())
+            ->orderBy('starts_at')
+            ->first();
+        $deadlineNames = ['es_deadline' => 'ES提出', 'aptitude_deadline' => '適性検査'];
+        $mascotMessage = match (true) {
+            $deadlineEvent !== null => ($deadlineEvent->company_name ?: '企業') . 'の' . ($deadlineNames[$deadlineEvent->event_type] ?? '締切') . 'は' . $deadlineEvent->starts_at->timezone('Asia/Tokyo')->locale('ja')->isoFormat('M月D日（ddd）') . 'まで。今日できる分を進めよう！',
+            $selectionEvents->isNotEmpty() => '次は' . ($selectionEvents->first()->company_name ?: '予定') . 'の' . ($selectionEvents->first()->title ?: '予定') . '。少しずつ準備しよう！',
+            default => '今日できることをひとつ。自分のペースで大丈夫！',
+        };
         $pendingDocuments = $applications->flatMap(fn (CareerApplication $application) => $application->documents);
         $documentsThisWeek = $applications->flatMap(fn (CareerApplication $application) => $application->documents)->filter(fn ($document): bool => $document->updated_at?->isCurrentWeek());
 
@@ -27,6 +38,7 @@ class HomeController extends Controller
             'categoryCounts' => $categoryCounts,
             'resultWaiting' => $resultWaiting,
             'selectionEvents' => $selectionEvents,
+            'mascotMessage' => $mascotMessage,
             'pendingDocuments' => $pendingDocuments,
             'documentsThisWeek' => $documentsThisWeek,
             'researchCount' => $applications->filter(fn (CareerApplication $application): bool => $application->research_count > 0)->count(),

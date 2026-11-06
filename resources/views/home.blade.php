@@ -6,12 +6,11 @@
     $labels = ['main' => '本選考', 'summer' => '夏インターン', 'autumn' => '秋・冬インターン'];
     $colors = ['main' => 'text-[#98553c]', 'summer' => 'text-[#9d7c42]', 'autumn' => 'text-[#55724f]'];
 @endphp
-<div class="mb-6 grid items-stretch gap-4 xl:grid-cols-[minmax(0,1.55fr)_minmax(350px,1fr)]">
+<div class="mb-6 grid items-stretch gap-4">
     <section class="relative min-h-40 overflow-hidden rounded-[1.75rem] border border-[#ebdcc6] bg-[#fffaf3] px-5 py-6 sm:px-8 sm:py-8">
-        <div class="relative z-10 max-w-2xl"><p class="text-[11px] font-semibold tracking-[0.16em] text-[#a66c48]">{{ now()->locale('ja')->isoFormat('M月D日（ddd）') }} <span class="mx-1">/</span> CAREER AI</p><h1 class="mt-3 text-2xl font-semibold sm:text-3xl">今日も、一歩ずつ。</h1><p class="mt-2 text-sm leading-6 text-[#80684f]">応募状況や書類、これからの予定をまとめました。</p></div>
-        <img src="{{ asset('images/career-ai-meerkat-walk.png') }}" alt="" class="pointer-events-none absolute -bottom-3 right-4 h-36 w-28 object-contain sm:right-10 sm:h-44">
+        <div class="relative z-10 max-w-[calc(100%_-_5rem)] sm:max-w-2xl"><p class="text-[11px] font-semibold tracking-[0.16em] text-[#a66c48]">{{ now()->locale('ja')->isoFormat('M月D日（ddd）') }} <span class="mx-1">/</span> CAREER AI</p><h1 class="mt-3 text-2xl font-semibold sm:text-3xl">今日も、一歩ずつ。</h1><p class="mt-2 text-sm leading-6 text-[#80684f]">応募状況や書類、これからの予定をまとめました。</p><p class="mt-4 inline-block max-w-full rounded-2xl rounded-bl-sm border border-[#f0dfc5] bg-[#fbf1df] px-4 py-2.5 text-xs font-medium leading-5 text-[#685442] sm:text-sm">{{ $mascotMessage }}</p></div>
+        <img src="{{ asset('images/career-ai-meerkat-walk.png') }}" alt="ミーアキャット" class="pointer-events-none absolute bottom-2 right-2 h-28 w-20 object-contain sm:bottom-4 sm:right-8 sm:h-40 sm:w-28">
     </section>
-    @include('partials.neon-usage-card')
 </div>
 
 <section class="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -30,6 +29,7 @@
 </section>
 
 <div class="grid gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,.9fr)]">
+<div class="space-y-5">
 <section class="rounded-[1.75rem] border border-[#eadfce] bg-[#fffaf3] p-5 sm:p-6">
 <div class="mb-4 flex items-center justify-between"><div><p class="text-[11px] font-semibold tracking-[.14em] text-[#a66c48]">UP NEXT</p><h2 class="mt-1 text-lg font-semibold">これからの予定</h2></div><a href="{{ route('schedule.index') }}" class="text-xs font-semibold text-[#a66c48]">すべて見る →</a></div>
 <div class="divide-y divide-[#eee3d4]">
@@ -48,5 +48,7 @@
 <a href="{{ route('documents.index') }}" class="block rounded-2xl bg-[#f7efe3] p-4"><p class="text-sm font-semibold">ES・書類を整理する</p><p class="mt-1 text-xs text-[#80684f]">提出予定や記入内容を確認できます。</p></a>
 </div><p class="mt-5 text-xs text-[#a28c73]">準備済みの書類 {{ $preparedDocuments }}件</p>
 </section>
+@include('partials.neon-usage-card')
+</div>
 </div>
 @endsection
