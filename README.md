@@ -109,7 +109,7 @@ RenderのBlueprint設定はリポジトリ直下の`render.yaml`にあります�
 変更はGitのコミットとタグで記録しています。リリースタグはGitHubの[Tags](https://github.com/taiga-kikai/career-ai/tags)から確認できます。
 
 <details>
-<summary>v1.00〜v1.30の変更内容</summary>
+<summary>v1.00〜v1.31の変更内容</summary>
 
 | バージョン | 主な変更 |
 | --- | --- |
@@ -144,6 +144,7 @@ RenderのBlueprint設定はリポジトリ直下の`render.yaml`にあります�
 | v1.28 | ES整理中の表示と二重送信防止を追加 |
 | v1.29 | 企業研究AIを終了し、企業情報の編集・項目別ランキングを追加 |
 | v1.30 | READMEを公開向けに整理 |
+| v1.31 | 完了済み予定を除外し、ホームに近い予定を最大3件表示 |
 
 </details>
 

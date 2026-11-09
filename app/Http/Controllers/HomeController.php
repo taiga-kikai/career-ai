@@ -17,22 +17,34 @@ class HomeController extends Controller
         $plannedApplications = $applications->filter(fn (CareerApplication $application): bool => str_starts_with($application->status, '応募予定'))->count();
         $resultWaiting = $applications->filter(fn (CareerApplication $application): bool => str_contains($application->status, '結果待ち'))->values();
         $selectionEvents = ScheduleEvent::query()
+            ->where('is_completed', false)
             ->where('starts_at', '>=', now())
             ->where('starts_at', '<=', now()->addDays(30))
             ->orderBy('starts_at')
             ->limit(12)
             ->get();
-        $deadlineEvent = ScheduleEvent::query()
-            ->whereIn('event_type', ['es_deadline', 'aptitude_deadline'])
-            ->where('starts_at', '>=', now())
-            ->orderBy('starts_at')
-            ->first();
-        $deadlineNames = ['es_deadline' => 'ES提出', 'aptitude_deadline' => '適性検査'];
-        $mascotMessage = match (true) {
-            $deadlineEvent !== null => ($deadlineEvent->company_name ?: '企業') . 'の' . ($deadlineNames[$deadlineEvent->event_type] ?? '締切') . 'は' . $deadlineEvent->starts_at->timezone('Asia/Tokyo')->locale('ja')->isoFormat('M月D日（ddd）') . 'まで。今日できる分を進めよう！',
-            $selectionEvents->isNotEmpty() => '次は' . ($selectionEvents->first()->company_name ?: '予定') . 'の' . ($selectionEvents->first()->title ?: '予定') . '。少しずつ準備しよう！',
-            default => '今日できることをひとつ。自分のペースで大丈夫！',
-        };
+        $deadlineNames = ['es_deadline' => 'ES提出締切', 'aptitude_deadline' => '適性検査締切'];
+        $mascotTasks = $selectionEvents->take(3)->map(function (ScheduleEvent $event) use ($deadlineNames): array {
+            $start = $event->starts_at->timezone('Asia/Tokyo');
+            $isDeadline = in_array($event->event_type, ['es_deadline', 'aptitude_deadline'], true);
+            $companyName = $event->company_name ?: '企業';
+            $taskName = $isDeadline
+                ? ($deadlineNames[$event->event_type] ?? '締切')
+                : ($event->title ?: '予定');
+
+            return [
+                'date' => $start->locale('ja')->isoFormat('M/D（ddd）'),
+                'time' => $isDeadline
+                    ? '〜'.$start->format('H:i')
+                    : $start->format('H:i').($event->ends_at ? '〜'.$event->ends_at->timezone('Asia/Tokyo')->format('H:i') : ''),
+                'text' => $isDeadline
+                    ? $companyName.'の'.$taskName
+                    : $taskName.($event->company_name ? ' · '.$event->company_name : ''),
+            ];
+        })->values();
+        $mascotMessage = $mascotTasks->isNotEmpty()
+            ? '近い締切・予定をまとめたよ。今日できる一歩から進めよう！'
+            : '今日できることをひとつ。自分のペースで大丈夫！';
         $pendingDocuments = $applications->flatMap(fn (CareerApplication $application) => $application->documents);
         $documentsThisWeek = $applications->flatMap(fn (CareerApplication $application) => $application->documents)->filter(fn ($document): bool => $document->updated_at?->isCurrentWeek());
 
@@ -42,6 +54,7 @@ class HomeController extends Controller
             'resultWaiting' => $resultWaiting,
             'selectionEvents' => $selectionEvents,
             'mascotMessage' => $mascotMessage,
+            'mascotTasks' => $mascotTasks,
             'pendingDocuments' => $pendingDocuments,
             'documentsThisWeek' => $documentsThisWeek,
             'totalApplications' => $applications->count(),

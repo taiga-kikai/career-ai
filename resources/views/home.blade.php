@@ -8,7 +8,19 @@
 @endphp
 <div class="mb-6 grid items-stretch gap-4">
     <section class="relative min-h-40 overflow-hidden rounded-[1.75rem] border border-[#ebdcc6] bg-[#fffaf3] px-5 py-6 sm:px-8 sm:py-8">
-        <div class="relative z-10 max-w-[calc(100%_-_5rem)] sm:max-w-2xl"><p class="text-[11px] font-semibold tracking-[0.16em] text-[#a66c48]">{{ now()->locale('ja')->isoFormat('M月D日（ddd）') }} <span class="mx-1">/</span> CAREER AI</p><h1 class="mt-3 text-2xl font-semibold sm:text-3xl">今日も、一歩ずつ。</h1><p class="mt-2 text-sm leading-6 text-[#80684f]">応募状況や書類、これからの予定をまとめました。</p><p class="mt-4 inline-block max-w-full rounded-2xl rounded-bl-sm border border-[#f0dfc5] bg-[#fbf1df] px-4 py-2.5 text-xs font-medium leading-5 text-[#685442] sm:text-sm">{{ $mascotMessage }}</p></div>
+        <div class="relative z-10 max-w-[calc(100%_-_5rem)] sm:max-w-2xl"><p class="text-[11px] font-semibold tracking-[0.16em] text-[#a66c48]">{{ now()->locale('ja')->isoFormat('M月D日（ddd）') }} <span class="mx-1">/</span> CAREER AI</p><h1 class="mt-3 text-2xl font-semibold sm:text-3xl">今日も、一歩ずつ。</h1><p class="mt-2 text-sm leading-6 text-[#80684f]">応募状況や書類、これからの予定をまとめました。</p><div class="mt-4 inline-block max-w-full rounded-2xl rounded-bl-sm border border-[#f0dfc5] bg-[#fbf1df] px-3 py-2.5 text-xs font-medium leading-5 text-[#685442] sm:px-4 sm:text-sm">
+                <p>{{ $mascotMessage }}</p>
+                @if ($mascotTasks->isNotEmpty())
+                    <ol class="mt-2 space-y-1.5">
+                        @foreach ($mascotTasks as $task)
+                            <li class="grid grid-cols-[auto_minmax(0,1fr)] gap-x-2 rounded-lg bg-white/60 px-2.5 py-1.5">
+                                <span class="whitespace-nowrap text-[10px] font-semibold text-[#a66c48]">{{ $task['date'] }} {{ $task['time'] }}</span>
+                                <span class="min-w-0 font-semibold">{{ $task['text'] }}</span>
+                            </li>
+                        @endforeach
+                    </ol>
+                @endif
+            </div></div>
         <img src="{{ asset('images/career-ai-meerkat-walk.png') }}" alt="ミーアキャット" class="pointer-events-none absolute bottom-2 right-2 h-28 w-20 object-contain sm:bottom-4 sm:right-8 sm:h-40 sm:w-28">
     </section>
 </div>
