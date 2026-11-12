@@ -109,7 +109,7 @@ RenderのBlueprint設定はリポジトリ直下の`render.yaml`にあります�
 変更はGitのコミットとタグで記録しています。リリースタグはGitHubの[Tags](https://github.com/taiga-kikai/career-ai/tags)から確認できます。
 
 <details>
-<summary>v1.00〜v1.32の変更内容</summary>
+<summary>v1.00〜v1.33の変更内容</summary>
 
 | バージョン | 主な変更 |
 | --- | --- |
@@ -146,6 +146,7 @@ RenderのBlueprint設定はリポジトリ直下の`render.yaml`にあります�
 | v1.30 | READMEを公開向けに整理 |
 | v1.31 | 完了済み予定を除外し、ホームに近い予定を最大3件表示 |
 | v1.32 | ホームの締切・予定一覧を中央の空きスペースへ移動 |
+| v1.33 | 予定日時の初期値・カレンダー選択日を修正 |
 
 </details>
 

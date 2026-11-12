@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ScheduleEvent;
 use App\Models\CareerApplication;
+use App\Models\ScheduleEvent;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
@@ -42,7 +42,15 @@ class ScheduleController extends Controller
         $date = $request->query('date');
         $date = is_string($date) && preg_match('/^\d{4}-\d{2}-\d{2}$/D', $date) === 1 ? $date : now('Asia/Tokyo')->addDay()->format('Y-m-d');
 
-        return view('schedule.form', ['event' => null, 'applications' => CareerApplication::query()->orderBy('company')->get(), 'initialStart' => Carbon::parse($date, 'Asia/Tokyo')->setTime(10, 0)->format('Y-m-d\TH:i')]);
+        $initialStart = Carbon::parse($date, 'Asia/Tokyo')->setTime(10, 0);
+        $initialEnd = $initialStart->copy()->addHour();
+
+        return view('schedule.form', [
+            'event' => null,
+            'applications' => CareerApplication::query()->orderBy('company')->get(),
+            'initialStart' => $initialStart->format('Y-m-d\TH:i'),
+            'initialEnd' => $initialEnd->format('Y-m-d\TH:i'),
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -156,7 +164,7 @@ class ScheduleController extends Controller
             'title' => ['nullable', 'string', 'max:255'],
             'meeting_format' => ['nullable', Rule::in(['online', 'offline'])],
             'starts_at' => ['required', 'date_format:Y-m-d\TH:i'],
-            'ends_at' => ['nullable', 'date_format:Y-m-d\TH:i', 'after_or_equal:starts_at'],
+            'ends_at' => ['nullable', 'date_format:Y-m-d\TH:i', 'after:starts_at'],
             'location' => ['nullable', 'string', 'max:255'],
             'meeting_url' => ['nullable', 'url', 'max:2048'],
             'notes' => ['nullable', 'string', 'max:10000'],

@@ -23,7 +23,7 @@
         <label class="block text-sm font-semibold text-[#685442]">補足（オンライン／オフライン）<select name="meeting_format" class="mt-2 w-full rounded-xl border border-[#e8ddce] bg-white px-4 py-3 text-sm font-normal outline-none focus:border-[#c88b64]"><option value="">選択しない</option><option value="online" @selected(old('meeting_format', $event?->meeting_format ?? '') === 'online')>オンライン</option><option value="offline" @selected(old('meeting_format', $event?->meeting_format ?? '') === 'offline')>オフライン</option></select></label>
         <label class="block text-sm font-semibold text-[#685442]">その他の補足（任意）<input name="title" type="text" maxlength="255" value="{{ old('title', $event?->title ?? '') }}" placeholder="例：提出フォーム、持ち物" class="mt-2 w-full rounded-xl border border-[#e8ddce] bg-white px-4 py-3 text-sm font-normal outline-none focus:border-[#c88b64]"></label>
         <label class="block text-sm font-semibold text-[#685442]"><span data-start-label>{{ $isDeadline ? '締切日時' : '開始日時' }}</span><input name="starts_at" type="datetime-local" required value="{{ old('starts_at', $initialStart) }}" class="mt-2 w-full rounded-xl border border-[#e8ddce] bg-white px-4 py-3 text-sm font-normal outline-none focus:border-[#c88b64]"></label>
-        <label data-end-field class="block text-sm font-semibold text-[#685442] {{ $isDeadline ? 'hidden' : '' }}">終了日時（任意）<input name="ends_at" type="datetime-local" value="{{ old('ends_at', $event?->ends_at?->timezone('Asia/Tokyo')->format('Y-m-d\TH:i') ?? '') }}" class="mt-2 w-full rounded-xl border border-[#e8ddce] bg-white px-4 py-3 text-sm font-normal outline-none focus:border-[#c88b64]"></label>
+        <label data-end-field class="block text-sm font-semibold text-[#685442] {{ $isDeadline ? 'hidden' : '' }}">終了日時（任意）<input name="ends_at" type="datetime-local" min="{{ old('starts_at', $initialStart) }}" value="{{ old('ends_at', $event?->ends_at?->timezone('Asia/Tokyo')->format('Y-m-d\TH:i') ?? ($event ? '' : ($initialEnd ?? ''))) }}" data-auto-fill="{{ $event || old('ends_at') ? 'false' : 'true' }}" class="mt-2 w-full rounded-xl border border-[#e8ddce] bg-white px-4 py-3 text-sm font-normal outline-none focus:border-[#c88b64]"></label>
         <label data-location-field class="block text-sm font-semibold text-[#685442] {{ old('meeting_format', $event?->meeting_format ?? '') === 'offline' ? '' : 'hidden' }}">場所（任意）<input name="location" type="text" maxlength="255" value="{{ old('location', $event?->location ?? '') }}" placeholder="例：会社名・会場名" class="mt-2 w-full rounded-xl border border-[#e8ddce] bg-white px-4 py-3 text-sm font-normal outline-none focus:border-[#c88b64]"></label>
         <label class="block text-sm font-semibold text-[#685442]">参加URL（任意）<input name="meeting_url" type="url" maxlength="2048" value="{{ old('meeting_url', $event?->meeting_url ?? '') }}" placeholder="https://..." class="mt-2 w-full rounded-xl border border-[#e8ddce] bg-white px-4 py-3 text-sm font-normal outline-none focus:border-[#c88b64]"></label>
     </div>
@@ -60,23 +60,51 @@
         return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
     };
 
-    // 既存の締切予定に終了日時が残っている場合も、フォーム表示時に空にする。
+    let previousWasDeadline = isDeadline(eventType?.value);
+    let endAutoFilled = endInput?.dataset.autoFill === 'true';
+    const setEndAfterStart = () => {
+        if (!startInput?.value || !endInput) return;
+        const start = new Date(startInput.value);
+        if (Number.isNaN(start.getTime())) return;
+        start.setMinutes(start.getMinutes() + 60);
+        endInput.value = toLocalDateTime(start);
+        endInput.min = startInput.value;
+        endAutoFilled = true;
+        endInput.dataset.autoFill = 'true';
+    };
+
     if (isDeadline(eventType?.value) && endInput) endInput.value = '';
+    if (!previousWasDeadline && endInput && (!endInput.value || endInput.value <= startInput.value)) setEndAfterStart();
+    if (startInput && endInput) endInput.min = startInput.value;
+
+    endInput?.addEventListener('input', () => {
+        endAutoFilled = false;
+        endInput.dataset.autoFill = 'false';
+    });
+    startInput?.addEventListener('change', () => {
+        if (isDeadline(eventType?.value)) return;
+        if (!endInput?.value || endAutoFilled || endInput.value <= startInput.value) setEndAfterStart();
+        else if (endInput) endInput.min = startInput.value;
+    });
 
     eventType?.addEventListener('change', () => {
         const becameDeadline = isDeadline(eventType.value);
 
-        if (becameDeadline) {
-            // 終了日時を締切日時へ移し、終了日時を空にする。
+        if (becameDeadline && !previousWasDeadline) {
             if (endInput?.value) startInput.value = endInput.value;
             if (endInput) endInput.value = '';
-        } else {
-            // 締切系から通常予定へ切り替えた時点を開始日時にする。
-            startInput.value = toLocalDateTime(new Date());
+        } else if (!becameDeadline && previousWasDeadline) {
+            // カレンダーで選んだ日付を保ち、時刻だけ現在時刻にする。
+            const selectedDate = startInput.value.slice(0, 10);
+            const nowTime = toLocalDateTime(new Date()).slice(11);
+            startInput.value = selectedDate ? `${selectedDate}T${nowTime}` : toLocalDateTime(new Date());
+            setEndAfterStart();
         }
 
+        previousWasDeadline = becameDeadline;
         startLabel.textContent = becameDeadline ? '締切日時' : '開始日時';
         endField?.classList.toggle('hidden', becameDeadline);
+        if (!becameDeadline && endInput) endInput.min = startInput.value;
     });
 
     const format = document.querySelector('[name="meeting_format"]');
