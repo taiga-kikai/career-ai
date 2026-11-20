@@ -11,7 +11,7 @@ COPY resources ./resources
 COPY vite.config.js ./
 RUN npm run build
 
-FROM php:8.5-apache
+FROM php:8.5.13-apache-bookworm
 RUN apt-get update && apt-get install -y --no-install-recommends libpq-dev libsqlite3-dev libzip-dev unzip && docker-php-ext-install pdo_pgsql pdo_sqlite zip && a2enmod rewrite headers && sed -ri 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf && rm -rf /var/lib/apt/lists/*
 WORKDIR /var/www/html
 COPY . .
