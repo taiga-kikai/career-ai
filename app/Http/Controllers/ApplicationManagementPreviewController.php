@@ -70,14 +70,14 @@ class ApplicationManagementPreviewController extends Controller
         $applicationData = $this->validatedApplication($request);
         $scheduleData = $this->validatedSchedule($request);
 
-        $connection = DB::connection();
+        $connection = $application->getConnection();
         $databaseStage = 'before_transaction';
         $transactionLevels = [
             'before_transaction' => $connection->transactionLevel(),
         ];
 
         try {
-            DB::transaction(function () use ($application, $applicationData, $scheduleData, &$databaseStage, &$transactionLevels, $connection): void {
+            $connection->transaction(function () use ($application, $applicationData, $scheduleData, &$databaseStage, &$transactionLevels, $connection): void {
                 $databaseStage = 'transaction_started';
                 $transactionLevels['transaction_started'] = $connection->transactionLevel();
                 $databaseStage = 'probe_after_begin';
