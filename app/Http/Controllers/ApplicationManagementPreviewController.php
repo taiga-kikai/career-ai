@@ -80,9 +80,13 @@ class ApplicationManagementPreviewController extends Controller
             DB::transaction(function () use ($application, $applicationData, $scheduleData, &$databaseStage, &$transactionLevels, $connection): void {
                 $databaseStage = 'transaction_started';
                 $transactionLevels['transaction_started'] = $connection->transactionLevel();
+                $databaseStage = 'probe_after_begin';
+                $connection->selectOne('SELECT 1');
 
                 $databaseStage = 'update_application';
                 $application->update($applicationData);
+                $databaseStage = 'probe_after_application_update';
+                $connection->selectOne('SELECT 1');
                 $databaseStage = 'sync_company_profile';
                 $transactionLevels['before_sync_company_profile'] = $connection->transactionLevel();
                 $this->syncCompanyProfile($application);
