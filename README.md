@@ -109,7 +109,7 @@ RenderのBlueprint設定はリポジトリ直下の`render.yaml`にあります�
 変更はGitのコミットとタグで記録しています。リリースタグはGitHubの[Tags](https://github.com/taiga-kikai/career-ai/tags)から確認できます。
 
 <details>
-<summary>v1.00〜v1.35の変更内容</summary>
+<summary>v1.00〜v1.36の変更内容</summary>
 
 | バージョン | 主な変更 |
 | --- | --- |
@@ -149,6 +149,7 @@ RenderのBlueprint設定はリポジトリ直下の`render.yaml`にあります�
 | v1.33 | 予定日時の初期値・カレンダー選択日を修正 |
 | v1.34 | カレンダーの省略予定を展開して編集可能に変更 |
 | v1.35 | RenderのPHPを修正済み8.5.13へ更新 |
+| v1.36 | DB例外のSQLSTATEと処理箇所を安全に記録 |
 
 </details>
 
