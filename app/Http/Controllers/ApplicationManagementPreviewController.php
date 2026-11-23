@@ -8,9 +8,11 @@ use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -68,11 +70,28 @@ class ApplicationManagementPreviewController extends Controller
         $applicationData = $this->validatedApplication($request);
         $scheduleData = $this->validatedSchedule($request);
 
-        DB::transaction(function () use ($application, $applicationData, $scheduleData): void {
-            $application->update($applicationData);
-            $this->syncCompanyProfile($application);
-            $this->createLinkedSchedule($application, $scheduleData);
-        });
+        $databaseStage = 'begin_transaction';
+        try {
+            DB::transaction(function () use ($application, $applicationData, $scheduleData, &$databaseStage): void {
+                $databaseStage = 'update_application';
+                $application->update($applicationData);
+                $databaseStage = 'sync_company_profile';
+                $this->syncCompanyProfile($application);
+                $databaseStage = 'create_linked_schedule';
+                $this->createLinkedSchedule($application, $scheduleData);
+            });
+        } catch (QueryException $exception) {
+            Log::error('Application update database failure', [
+                'stage' => $databaseStage,
+                'sqlstate' => $exception->errorInfo[0] ?? (string) $exception->getCode(),
+                'driver_code' => $exception->errorInfo[1] ?? null,
+                'connection' => $exception->getConnectionName(),
+                'route' => $request->route()?->getName(),
+                'method' => $request->method(),
+            ]);
+
+            throw $exception;
+        }
 
         return to_route('applications.preview', ['category' => $application->category])->with('application_saved', $scheduleData ? '企業情報を更新し、スケジュールを追加しました。' : '変更を保存しました。');
     }
