@@ -4,6 +4,7 @@ return [
 
     'career_ai' => [
         'web_enabled' => (bool) env('CAREER_AI_WEB_ENABLED', false),
+        'version' => is_file(base_path('VERSION')) ? trim(file_get_contents(base_path('VERSION'))) : 'dev',
         'demo_login_enabled' => (bool) env('CAREER_AI_DEMO_LOGIN_ENABLED', false),
         'google_calendar_enabled' => (bool) env('CAREER_AI_GOOGLE_CALENDAR_ENABLED', env('APP_ENV', 'production') === 'local'),
     ],

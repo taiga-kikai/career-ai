@@ -140,7 +140,7 @@
                 </div>
                 <p class="text-center text-[12px] leading-5 text-[#766553]">アカウント登録には招待リンクが必要です。<br>招待を受け取った方は、リンクから登録できます。</p>
             </div>
-            <footer class="shrink-0 pt-2 text-center text-[10px] text-[#9a8874]">Career AI <span aria-hidden="true">·</span> 就活の準備を、ひとつの場所に</footer>
+            <footer class="shrink-0 pt-2 text-center text-[10px] text-[#9a8874]"><span>Career AI</span> <span aria-hidden="true">·</span> <span>{{ config('services.career_ai.version', 'dev') }}</span> <span aria-hidden="true">·</span> <span>就活の準備を、ひとつの場所に</span></footer>
         </section>
     </main>
 </body>
