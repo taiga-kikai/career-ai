@@ -72,35 +72,19 @@ class ApplicationManagementPreviewController extends Controller
 
         $connection = DB::connection();
         $databaseStage = 'before_transaction';
-        Log::info('Application update transaction checkpoint', [
-            'stage' => $databaseStage,
-            'connection' => $connection->getName(),
-            'transaction_level' => $connection->transactionLevel(),
-            'route' => $request->route()?->getName(),
-            'method' => $request->method(),
-        ]);
+        $transactionLevels = [
+            'before_transaction' => $connection->transactionLevel(),
+        ];
 
         try {
-            DB::transaction(function () use ($application, $applicationData, $scheduleData, &$databaseStage, $connection, $request): void {
+            DB::transaction(function () use ($application, $applicationData, $scheduleData, &$databaseStage, &$transactionLevels, $connection): void {
                 $databaseStage = 'transaction_started';
-                Log::info('Application update transaction checkpoint', [
-                    'stage' => $databaseStage,
-                    'connection' => $connection->getName(),
-                    'transaction_level' => $connection->transactionLevel(),
-                    'route' => $request->route()?->getName(),
-                    'method' => $request->method(),
-                ]);
+                $transactionLevels['transaction_started'] = $connection->transactionLevel();
 
                 $databaseStage = 'update_application';
                 $application->update($applicationData);
                 $databaseStage = 'sync_company_profile';
-                Log::info('Application update transaction checkpoint', [
-                    'stage' => $databaseStage,
-                    'connection' => $connection->getName(),
-                    'transaction_level' => $connection->transactionLevel(),
-                    'route' => $request->route()?->getName(),
-                    'method' => $request->method(),
-                ]);
+                $transactionLevels['before_sync_company_profile'] = $connection->transactionLevel();
                 $this->syncCompanyProfile($application);
 
                 $databaseStage = 'create_linked_schedule';
@@ -112,14 +96,14 @@ class ApplicationManagementPreviewController extends Controller
                 'sqlstate' => $exception->errorInfo[0] ?? (string) $exception->getCode(),
                 'driver_code' => $exception->errorInfo[1] ?? null,
                 'connection' => $exception->getConnectionName(),
-                'transaction_level' => $connection->transactionLevel(),
+                'transaction_levels' => $transactionLevels,
+                'transaction_level_after_rollback' => $connection->transactionLevel(),
                 'route' => $request->route()?->getName(),
                 'method' => $request->method(),
             ]);
 
             throw $exception;
         }
-
         return to_route('applications.preview', ['category' => $application->category])->with('application_saved', $scheduleData ? '企業情報を更新し、スケジュールを追加しました。' : '変更を保存しました。');
     }
 
