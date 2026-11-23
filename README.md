@@ -109,7 +109,7 @@ RenderのBlueprint設定はリポジトリ直下の`render.yaml`にあります�
 変更はGitのコミットとタグで記録しています。リリースタグはGitHubの[Tags](https://github.com/taiga-kikai/career-ai/tags)から確認できます。
 
 <details>
-<summary>v1.00〜v1.37の変更内容</summary>
+<summary>v1.00〜v1.38の変更内容</summary>
 
 | バージョン | 主な変更 |
 | --- | --- |
@@ -151,6 +151,7 @@ RenderのBlueprint設定はリポジトリ直下の`render.yaml`にあります�
 | v1.35 | RenderのPHPを修正済み8.5.13へ更新 |
 | v1.36 | DB例外のSQLSTATEと処理箇所を安全に記録 |
 | v1.37 | 応募先更新で失敗したDB処理段階を記録 |
+| v1.38 | トランザクション開始前後の状態を記録 |
 
 </details>
 

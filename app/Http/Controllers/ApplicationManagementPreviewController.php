@@ -70,13 +70,39 @@ class ApplicationManagementPreviewController extends Controller
         $applicationData = $this->validatedApplication($request);
         $scheduleData = $this->validatedSchedule($request);
 
-        $databaseStage = 'begin_transaction';
+        $connection = DB::connection();
+        $databaseStage = 'before_transaction';
+        Log::info('Application update transaction checkpoint', [
+            'stage' => $databaseStage,
+            'connection' => $connection->getName(),
+            'transaction_level' => $connection->transactionLevel(),
+            'route' => $request->route()?->getName(),
+            'method' => $request->method(),
+        ]);
+
         try {
-            DB::transaction(function () use ($application, $applicationData, $scheduleData, &$databaseStage): void {
+            DB::transaction(function () use ($application, $applicationData, $scheduleData, &$databaseStage, $connection, $request): void {
+                $databaseStage = 'transaction_started';
+                Log::info('Application update transaction checkpoint', [
+                    'stage' => $databaseStage,
+                    'connection' => $connection->getName(),
+                    'transaction_level' => $connection->transactionLevel(),
+                    'route' => $request->route()?->getName(),
+                    'method' => $request->method(),
+                ]);
+
                 $databaseStage = 'update_application';
                 $application->update($applicationData);
                 $databaseStage = 'sync_company_profile';
+                Log::info('Application update transaction checkpoint', [
+                    'stage' => $databaseStage,
+                    'connection' => $connection->getName(),
+                    'transaction_level' => $connection->transactionLevel(),
+                    'route' => $request->route()?->getName(),
+                    'method' => $request->method(),
+                ]);
                 $this->syncCompanyProfile($application);
+
                 $databaseStage = 'create_linked_schedule';
                 $this->createLinkedSchedule($application, $scheduleData);
             });
@@ -86,6 +112,7 @@ class ApplicationManagementPreviewController extends Controller
                 'sqlstate' => $exception->errorInfo[0] ?? (string) $exception->getCode(),
                 'driver_code' => $exception->errorInfo[1] ?? null,
                 'connection' => $exception->getConnectionName(),
+                'transaction_level' => $connection->transactionLevel(),
                 'route' => $request->route()?->getName(),
                 'method' => $request->method(),
             ]);
