@@ -113,7 +113,7 @@ RenderのBlueprint設定はリポジトリ直下の`render.yaml`にあります�
 変更はGitのコミットとタグで記録しています。リリースタグはGitHubの[Tags](https://github.com/taiga-kikai/career-ai/tags)から確認できます。
 
 <details>
-<summary>v1.00〜v1.43の変更内容</summary>
+<summary>v1.00〜v1.44の変更内容</summary>
 
 | バージョン | 主な変更 |
 | --- | --- |
@@ -161,6 +161,7 @@ RenderのBlueprint設定はリポジトリ直下の`render.yaml`にあります�
 | v1.41 | ログイン画面にバージョンを表示 |
 | v1.42 | 応募先更新と診断に同じDB接続を使用 |
 | v1.43 | ファイルの役割と処理のつながりをまとめた初心者向けコード案内を追加 |
+| v1.44 | 応募先追加時に一致・類似企業を確認 |
 
 </details>
 

@@ -389,6 +389,81 @@
         });
         document.getElementById('status-detail-close').addEventListener('click', () => statusDetailDialog.close());
         document.getElementById('status-detail-cancel').addEventListener('click', () => statusDetailDialog.close());
+        let duplicateConfirmationAccepted = false;
+        const normalizeCompanyName = (name) => String(name ?? '')
+            .normalize('NFKC')
+            .toLocaleLowerCase('ja')
+            .replace(/\(株\)/gu, '株式会社')
+            .replace(/\(有\)/gu, '有限会社')
+            .replace(/[\s\u3000、。，．,・.：:「」『』【】\[\]［］\-‐–—]/gu, '');
+        const normalizeCompanyCoreName = (name) => normalizeCompanyName(name)
+            .replace(/株式会社|有限会社|合同会社|合資会社|合名会社/gu, '');
+        const companyNameEditDistance = (left, right) => {
+            const leftCharacters = Array.from(left);
+            const rightCharacters = Array.from(right);
+            let previousRow = Array.from({ length: rightCharacters.length + 1 }, (_, index) => index);
+            for (let leftIndex = 1; leftIndex <= leftCharacters.length; leftIndex += 1) {
+                const currentRow = [leftIndex];
+                for (let rightIndex = 1; rightIndex <= rightCharacters.length; rightIndex += 1) {
+                    const substitutionCost = leftCharacters[leftIndex - 1] === rightCharacters[rightIndex - 1] ? 0 : 1;
+                    currentRow[rightIndex] = Math.min(
+                        currentRow[rightIndex - 1] + 1,
+                        previousRow[rightIndex] + 1,
+                        previousRow[rightIndex - 1] + substitutionCost,
+                    );
+                }
+                previousRow = currentRow;
+            }
+            return previousRow[rightCharacters.length];
+        };
+        const findCompanyMatches = () => {
+            const enteredName = normalizeCompanyName(companyField.value);
+            const enteredCoreName = normalizeCompanyCoreName(companyField.value);
+            if (!enteredName) {
+                return [];
+            }
+
+            const categoryLabels = { main: '本選考', summer: '夏インターン', autumn: '秋・冬インターン' };
+            const matches = new Map();
+            rows.forEach((row) => {
+                const existingName = row.dataset.company?.trim() ?? '';
+                const normalizedExistingName = normalizeCompanyName(existingName);
+                const existingCoreName = normalizeCompanyCoreName(existingName);
+                if (!normalizedExistingName) {
+                    return;
+                }
+
+                const exactMatch = normalizedExistingName === enteredName;
+                let similarMatch = false;
+                if (!exactMatch) {
+                    if (enteredCoreName.length >= 3 && enteredCoreName === existingCoreName) {
+                        similarMatch = true;
+                    } else {
+                        const longestLength = Math.max(enteredCoreName.length, existingCoreName.length);
+                        if (longestLength >= 5) {
+                            const distance = companyNameEditDistance(enteredCoreName, existingCoreName);
+                            similarMatch = 1 - distance / longestLength >= 0.75;
+                        }
+                    }
+                }
+
+                if (!exactMatch && !similarMatch) {
+                    return;
+                }
+
+                const match = matches.get(normalizedExistingName) ?? {
+                    companyName: existingName,
+                    exact: false,
+                    categories: new Set(),
+                };
+                match.exact ||= exactMatch;
+                match.categories.add(categoryLabels[row.dataset.category] ?? row.dataset.category);
+                matches.set(normalizedExistingName, match);
+            });
+
+            return [...matches.values()];
+        };
+
         applicationForm.addEventListener('submit', (event) => {
             const group = statusGroupField.value;
             const needsSubtype = group && groupsWithDetails[categoryField.value].includes(group);
@@ -399,9 +474,39 @@
                 } else {
                     statusCurrent.textContent = '選考状況を選んでください。';
                 }
+                return;
+            }
+
+            if (methodOverride.disabled && !duplicateConfirmationAccepted) {
+                const matchingCompanies = findCompanyMatches();
+                if (matchingCompanies.length === 0) {
+                    return;
+                }
+
+                event.preventDefault();
+                const companyList = matchingCompanies.slice(0, 5).map((match) => {
+                    const matchType = match.exact ? '名前一致' : '類似';
+                    const categories = [...match.categories].join('・');
+                    return '・' + matchType + '：' + match.companyName + (categories ? '（' + categories + '）' : '');
+                });
+                if (matchingCompanies.length > companyList.length) {
+                    companyList.push('ほか' + (matchingCompanies.length - companyList.length) + '社');
+                }
+                const message = [
+                    '一致または類似する企業がすでに登録されています。',
+                    '',
+                    ...companyList,
+                    '',
+                    '同じ企業を別の応募区分で登録する場合は、そのまま続けられます。',
+                    'この企業を追加しますか？',
+                ].join('\n');
+
+                if (window.confirm(message)) {
+                    duplicateConfirmationAccepted = true;
+                    applicationForm.requestSubmit();
+                }
             }
         });
-
         const updateList = () => {
             const query = search.value.trim().toLocaleLowerCase('ja');
             let count = 0;
@@ -428,6 +533,7 @@
         };
 
         const openAddDialog = () => {
+            duplicateConfirmationAccepted = false;
             applicationForm.reset();
             addToSchedule.checked = false;
             syncScheduleFields();
@@ -448,6 +554,7 @@
         };
 
         const openEditDialog = (row) => {
+            duplicateConfirmationAccepted = false;
             applicationForm.reset();
             addToSchedule.checked = false;
             syncScheduleFields();
