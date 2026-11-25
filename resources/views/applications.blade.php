@@ -170,6 +170,19 @@
         let activeCategory = 'main';
         let activeFilter = 'all';
 
+        const updateScheduleEndTime = () => {
+            if (!addToSchedule.checked || applicationScheduleEndWrap.hidden || !applicationScheduleStart.value) {
+                return;
+            }
+
+            const startDate = new Date(applicationScheduleStart.value + ':00Z');
+            if (Number.isNaN(startDate.getTime())) {
+                return;
+            }
+
+            startDate.setUTCHours(startDate.getUTCHours() + 1);
+            applicationScheduleEnd.value = startDate.toISOString().slice(0, 16);
+        };
         const syncScheduleFields = () => {
             const enabled = addToSchedule.checked;
             const isDeadline = ['es_deadline', 'aptitude_deadline'].includes(applicationScheduleType.value);
@@ -178,10 +191,16 @@
             applicationScheduleStart.required = enabled;
             applicationScheduleStartLabel.textContent = isDeadline ? '締切日時' : '開始日時';
             applicationScheduleEndWrap.hidden = isDeadline;
-            if (isDeadline) applicationScheduleEnd.value = '';
+            if (isDeadline) {
+                applicationScheduleEnd.value = '';
+            } else if (enabled && applicationScheduleStart.value && !applicationScheduleEnd.value) {
+                updateScheduleEndTime();
+            }
         };
         addToSchedule.addEventListener('change', syncScheduleFields);
         applicationScheduleType.addEventListener('change', syncScheduleFields);
+        applicationScheduleStart.addEventListener('input', updateScheduleEndTime);
+        applicationScheduleStart.addEventListener('change', updateScheduleEndTime);
 
         const statusGroups = {
             main: ['応募予定', '選考中', '結果待ち', '不合格', '内々定', '辞退', 'その他'],
