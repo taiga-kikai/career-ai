@@ -64,7 +64,7 @@ flowchart LR
 
 | ファイル | 内容 |
 | --- | --- |
-| [EsQuestionParser.php](../app/EsQuestionParser.php) | 貼り付けたES本文を設問と回答に分けます。設定があればGemini APIを使い、利用不可・失敗時は簡易的なローカル整理に切り替えます。GoogleのHTTP状態、エラーコード、再試行時間などを記録し、質問文やAPIキー自体は追加ログに含めません。画面からの呼び出し順とAPIの入出力は[機能紹介ガイド](FEATURE_TOUR.md#es設問整理-gemini-api)を参照してください。 |
+| [EsQuestionParser.php](../app/EsQuestionParser.php) | 貼り付けたES全文を一度Geminiへ送り、設問と回答に整理します。これは添削・評価ではありません。指示文は`$prompt`、JSONの形は`$schema`で指定し、利用不可・失敗時は正規表現を使うローカル整理へ切り替えます。GoogleのHTTP状態、エラーコード、再試行時間などを記録し、質問文やAPIキー自体は追加ログに含めません。処理の詳細は[機能紹介ガイド](FEATURE_TOUR.md#es設問整理-gemini-api)を参照してください。 |
 | [CareerApplicationDefaults.php](../app/CareerApplicationDefaults.php) | 開発確認用の架空の応募先サンプルを配列で用意します。 |
 | [GoogleCalendarService.php](../app/Services/GoogleCalendarService.php) | OAuthコード・アクセストークン交換、期限切れトークン更新、予定作成・更新、Googleカレンダー上の色ラベル準備を行います。 |
 | [NeonActivityEstimateService.php](../app/Services/NeonActivityEstimateService.php) | Career AIがPostgreSQLへ接続した時間を記録し、Neon FreeプランのCU時間を推定します。請求上の実測値ではありません。 |

@@ -66,6 +66,8 @@ Geminiの詳しい処理は[ES設問整理: Gemini API](#es設問整理-gemini-a
 
 Gemini連携を説明するときは、次の順番でコードを開くと、入力から結果までを一続きで示せます。
 
+**現在の機能はESの添削・評価ではなく、設問と回答の整理です。** 整理ボタンを押すと、貼り付け欄の本文全体を一つのリクエストでGeminiに送り、設問ごとに分けた結果を受け取ります。送信前にプログラム側で設問単位へ分割しているわけではありません。
+
 1. **画面:** `resources/views/documents/form.blade.php` の整理ボタンが本文を `/documents/parse` に送ります。処理中表示と二重送信防止も画面側にあります。
 2. **URL:** `routes/web.php` の `POST /documents/parse` が受け取り先を `ApplicationDocumentController::parse` に結び付けます。
 3. **入力確認:** `ApplicationDocumentController::parse()` が `raw_text` の存在・文字数を検証してからParserを呼びます。
@@ -76,6 +78,18 @@ Gemini連携を説明するときは、次の順番でコードを開くと、�
 8. **保存:** 画面で内容を確認した後、通常の保存リクエストが `ApplicationDocumentController::store()` または `update()` に届き、入力検証後に `ApplicationDocument` 経由でDBへ保存されます。
 
 **設定場所:** `config/services.php` は `GEMINI_API_KEY` と `GEMINI_MODEL` を読む設定ファイルです。APIキー本体は `.env` またはRender等の環境変数に置き、ソースコードやGitHubへ書き込みません。
+
+### 設問の分け方を決めている場所
+
+| 役割 | ファイル・処理 | 内容 |
+| --- | --- | --- |
+| 全文を画面から送信 | [documents/form.blade.php](../resources/views/documents/form.blade.php) | `raw_text`欄の文章全体をJSON本文に入れて`POST /documents/parse`へ送る。 |
+| 入力上限とParser呼び出し | [ApplicationDocumentController.php](../app/Http/Controllers/ApplicationDocumentController.php) の `parse()` | `raw_text`を必須文字列、最大50,000文字として検証し、その全文をParserへ渡す。 |
+| Geminiへ渡す指示 | [EsQuestionParser.php](../app/EsQuestionParser.php) の `parseWithGemini()` | 本文の設問・回答を順番どおり抽出し、創作・要約をせず、判別できない箇所は原文を保つよう指示する。 |
+| 返却JSONの形 | 同メソッドの `$schema` | `questions`配列の各要素に、文字列の`question`と`answer`を必須項目として指定する。 |
+| Geminiを使えない場合 | 同ファイルの `splitLocally()` | 質問番号や依頼文の表現を正規表現で探す簡易ルール。Geminiへは送信しない。 |
+
+指示文は`EsQuestionParser.php`内の`$prompt`、JSON形式は`$schema`で定めています。Geminiが本文の区切りを誤る場合もあるため、結果は画面で確認・修正してから保存する仕組みです。
 
 > Geminiの補助整理は結果の正確さを保証しません。質問と回答が混ざった場合に修正できるよう、保存前の確認・編集を前提にしています。
 
