@@ -11,12 +11,14 @@ use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\ScheduleController;
 use Illuminate\Support\Facades\Route;
 
+// ログイン前に使う画面、認証、招待登録のルートです。
 Route::get('/', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'authenticate'])->middleware('throttle:6,1')->name('login.authenticate');
 Route::post('/demo-login', [AuthController::class, 'demo'])->name('demo.login');
 Route::get('/invite/{token}', [InvitationController::class, 'accept'])->name('invitation.accept');
 Route::post('/invite/{token}', [InvitationController::class, 'store'])->middleware('throttle:6,1')->name('invitation.store');
 
+// ここから下はログイン済みユーザーだけが使える機能です。
 Route::middleware('auth')->group(function (): void {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/google-calendar/connect', [GoogleCalendarController::class, 'connect'])->name('google-calendar.connect');
@@ -24,6 +26,7 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/google-calendar/disconnect', [GoogleCalendarController::class, 'disconnect'])->name('google-calendar.disconnect');
     Route::post('/invitations', [InvitationController::class, 'create'])->name('invitations.create');
 
+    // URL、HTTPメソッド、処理先コントローラーの対応を定義します。
     Route::get('/home', HomeController::class)->name('home.preview');
 
     Route::get('/applications', ApplicationManagementPreviewController::class)->name('applications.preview');

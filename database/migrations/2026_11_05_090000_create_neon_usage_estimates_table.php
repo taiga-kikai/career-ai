@@ -4,6 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
+// アプリからNeonへ接続した時間を月単位で推定する記録テーブルを作成します。
 return new class extends Migration
 {
     public function up(): void

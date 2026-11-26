@@ -11,10 +11,12 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
+/** 月間カレンダー、予定の登録・編集、完了状態、Google用の手動登録リンクを扱う。 */
 class ScheduleController extends Controller
 {
     private const EVENT_TYPES = ['briefing', 'interview_1', 'interview_2', 'interview_3', 'interview_final', 'ob_visit', 'internship', 'group_discussion', 'es_deadline', 'aptitude_deadline', 'other'];
 
+    /** 指定月のカレンダー枠と、その月に開始する予定を画面へ渡す。 */
     public function index(Request $request): View
     {
         $this->ensureLocalPreview();
@@ -36,6 +38,7 @@ class ScheduleController extends Controller
         ]);
     }
 
+    /** 日付指定があれば引き継ぎ、開始時刻と終了時刻の初期値を入れたフォームを表示する。 */
     public function create(Request $request): View
     {
         $this->ensureLocalPreview();
@@ -53,6 +56,7 @@ class ScheduleController extends Controller
         ]);
     }
 
+    /** 検証・変換した新しい予定をDBに保存する。 */
     public function store(Request $request): RedirectResponse
     {
         $this->ensureLocalPreview();
@@ -61,6 +65,7 @@ class ScheduleController extends Controller
         return to_route('schedule.index', ['month' => $event->starts_at->timezone('Asia/Tokyo')->format('Y-m')])->with('schedule_saved', '予定を追加しました。');
     }
 
+    /** 対象予定と応募先を読み込み、編集フォームを表示する。 */
     public function edit(ScheduleEvent $event): View
     {
         $this->ensureLocalPreview();
@@ -69,6 +74,7 @@ class ScheduleController extends Controller
         return view('schedule.form', ['event' => $event, 'applications' => CareerApplication::query()->orderBy('company')->get(), 'initialStart' => $event->starts_at->timezone('Asia/Tokyo')->format('Y-m-d\TH:i')]);
     }
 
+    /** 入力を検証・変換して既存予定を更新する。 */
     public function update(Request $request, ScheduleEvent $event): RedirectResponse
     {
         $this->ensureLocalPreview();
@@ -77,6 +83,7 @@ class ScheduleController extends Controller
         return to_route('schedule.index', ['month' => $event->starts_at->timezone('Asia/Tokyo')->format('Y-m')])->with('schedule_saved', '予定を更新しました。');
     }
 
+    /** 予定を削除し、対象予定があった月のカレンダーへ戻る。 */
     public function destroy(ScheduleEvent $event): RedirectResponse
     {
         $this->ensureLocalPreview();
@@ -86,6 +93,7 @@ class ScheduleController extends Controller
         return to_route('schedule.index', ['month' => $month])->with('schedule_saved', '予定を削除しました。');
     }
 
+    /** 完了状態を反転し、同じ画面へ結果を返す。 */
     public function toggleCompleted(ScheduleEvent $event): RedirectResponse
     {
         $this->ensureLocalPreview();
@@ -94,6 +102,7 @@ class ScheduleController extends Controller
         return back()->with('schedule_saved', $event->is_completed ? '予定を完了にしました。' : '予定を未完了に戻しました。');
     }
 
+    /** API連携が使えない場合に、内容を埋めたGoogle Calendarの登録画面を開く。 */
     public function googleCalendarFallback(ScheduleEvent $event): RedirectResponse
     {
         $this->ensureLocalPreview();
@@ -113,7 +122,11 @@ class ScheduleController extends Controller
         ], '', '&', PHP_QUERY_RFC3986));
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * 手動登録リンクやCalendar APIで使う予定の題名・日時・説明を組み立てる。
+     *
+     * @return array<string, mixed>
+     */
     private function calendarPayload(ScheduleEvent $event): array
     {
         $start = $event->starts_at->timezone('Asia/Tokyo');
@@ -146,13 +159,21 @@ class ScheduleController extends Controller
         return $payload;
     }
 
-    /** @return array<string, string> */
+    /**
+     * 表示・同期で共通して使う予定種別の日本語ラベルを返す。
+     *
+     * @return array<string, string>
+     */
     public static function eventTypeNames(): array
     {
         return ['briefing' => '説明会', 'interview_1' => '一次面接', 'interview_2' => '二次面接', 'interview_3' => '三次面接', 'interview_final' => '最終面接', 'ob_visit' => 'OB・OG訪問', 'internship' => 'インターン', 'group_discussion' => 'GD', 'es_deadline' => 'ES締切', 'aptitude_deadline' => '適性検査締切', 'other' => 'その他'];
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * 予定欄を検証し、応募先IDがログイン中の利用者のデータかも確認する。
+     *
+     * @return array<string, mixed>
+     */
     private function validateEvent(Request $request): array
     {
         return $request->validate([
@@ -171,7 +192,12 @@ class ScheduleController extends Controller
         ]);
     }
 
-    /** @param array<string, mixed> $validated @return array<string, mixed> */
+    /**
+     * 任意項目を応募先情報と整合させ、日時を日本時間のCarbon値へ変換する。
+     *
+     * @param  array<string, mixed>  $validated
+     * @return array<string, mixed>
+     */
     private function eventData(array $validated): array
     {
         $application = ! empty($validated['career_application_id'])
@@ -195,6 +221,7 @@ class ScheduleController extends Controller
         return $validated;
     }
 
+    /** ローカルまたは機能有効化済み環境でのみスケジュールを表示可能にする。 */
     private function ensureLocalPreview(): void
     {
         abort_unless(app()->environment('local') || config('services.career_ai.web_enabled'), 404);

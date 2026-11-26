@@ -4,6 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
+// 旧企業研究機能の情報を保持するテーブルです。現在の企業プロフィールとは別に残します。
 return new class extends Migration
 {
     /**

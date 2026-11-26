@@ -4,6 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
+// バックグラウンドジョブと失敗したジョブの記録テーブルを作成・削除します。
 return new class extends Migration
 {
     /**

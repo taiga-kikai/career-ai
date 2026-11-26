@@ -4,6 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
+// ES原文と、設問・回答の組を応募先に関連付けて保存するテーブルを作成します。
 return new class extends Migration
 {
     /**

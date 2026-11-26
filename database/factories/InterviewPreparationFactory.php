@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 class InterviewPreparationFactory extends Factory
 {
     /**
-     * Define the model's default state.
+     * 応募先と面接準備の文章・練習質問を作るテスト用初期値を定義する。
      *
      * @return array<string, mixed>
      */

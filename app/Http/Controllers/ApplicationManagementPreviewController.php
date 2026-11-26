@@ -6,9 +6,9 @@ use App\Models\CareerApplication;
 use App\Models\ScheduleEvent;
 use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -16,8 +16,10 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
+/** 応募先の一覧・登録・更新を担当し、企業プロフィールや予定との関連も保つ。 */
 class ApplicationManagementPreviewController extends Controller
 {
+    /** 応募先を区分ごとに整形し、一覧と追加フォームの初期値を画面へ渡す。 */
     public function __invoke(Request $request): View
     {
         $this->ensureLocalPreview();
@@ -47,6 +49,7 @@ class ApplicationManagementPreviewController extends Controller
         ]);
     }
 
+    /** 応募先と任意の予定を一つのDBトランザクションで新規登録する。 */
     public function store(Request $request): RedirectResponse
     {
         $this->ensureLocalPreview();
@@ -64,6 +67,7 @@ class ApplicationManagementPreviewController extends Controller
         return to_route('applications.preview', ['category' => $application->category])->with('application_saved', $scheduleData ? '応募先とスケジュールを登録しました。' : '応募先を追加しました。');
     }
 
+    /** 応募先、企業プロフィール、任意の予定を更新し、失敗段階だけを個人情報なしで記録する。 */
     public function update(Request $request, CareerApplication $application): RedirectResponse
     {
         $this->ensureLocalPreview();
@@ -80,11 +84,13 @@ class ApplicationManagementPreviewController extends Controller
             $connection->transaction(function () use ($application, $applicationData, $scheduleData, &$databaseStage, &$transactionLevels, $connection): void {
                 $databaseStage = 'transaction_started';
                 $transactionLevels['transaction_started'] = $connection->transactionLevel();
+                // 開始直後の単純な照会で、更新処理に入る前からDB接続が失敗していないか確認する。
                 $databaseStage = 'probe_after_begin';
                 $connection->selectOne('SELECT 1');
 
                 $databaseStage = 'update_application';
                 $application->update($applicationData);
+                // 応募先更新直後にも同じ接続を確認し、後続処理との失敗位置を切り分ける。
                 $databaseStage = 'probe_after_application_update';
                 $connection->selectOne('SELECT 1');
                 $databaseStage = 'sync_company_profile';
@@ -108,9 +114,11 @@ class ApplicationManagementPreviewController extends Controller
 
             throw $exception;
         }
+
         return to_route('applications.preview', ['category' => $application->category])->with('application_saved', $scheduleData ? '企業情報を更新し、スケジュールを追加しました。' : '変更を保存しました。');
     }
 
+    /** 応募先を削除し、削除前の区分を保って一覧へ戻す。 */
     public function destroy(CareerApplication $application): RedirectResponse
     {
         $this->ensureLocalPreview();
@@ -121,6 +129,7 @@ class ApplicationManagementPreviewController extends Controller
         return to_route('applications.preview', ['category' => $category])->with('application_saved', '応募先を削除しました。');
     }
 
+    /** 利用者本人が追加した選考状況の選択肢だけを削除する。 */
     public function destroyStatusOption(Request $request, int $statusOption): JsonResponse
     {
         $this->ensureLocalPreview();
@@ -142,7 +151,11 @@ class ApplicationManagementPreviewController extends Controller
         return response()->json(['deleted' => true]);
     }
 
-    /** @return array{category: string, company: string, program: string|null, status: string, detail: string|null} */
+    /**
+     * 画面入力を検証し、選考区分・詳細・結果予定日を保存用の形式へ揃える。
+     *
+     * @return array{category: string, company: string, program: string|null, status: string, detail: string|null}
+     */
     private function validatedApplication(Request $request): array
     {
         $validated = $request->validate([
@@ -202,11 +215,13 @@ class ApplicationManagementPreviewController extends Controller
         ];
     }
 
+    /** ローカルまたは機能有効化済み環境でのみ応募管理を表示可能にする。 */
     private function ensureLocalPreview(): void
     {
         abort_unless(app()->environment('local') || config('services.career_ai.web_enabled'), 404);
     }
 
+    /** 応募先名に対応する利用者所有の企業プロフィールを作り、応募先へ結び付ける。 */
     private function syncCompanyProfile(CareerApplication $application): void
     {
         $profile = auth()->user()->companyProfiles()->firstOrCreate([
@@ -217,7 +232,11 @@ class ApplicationManagementPreviewController extends Controller
         $application->save();
     }
 
-    /** @return array{event_type: string, confirmation_status: string, starts_at: string, ends_at: string|null}|null */
+    /**
+     * 予定を一緒に作る設定が有効なら、予定種別・状態・日時を検証して返す。
+     *
+     * @return array{event_type: string, confirmation_status: string, starts_at: string, ends_at: string|null}|null
+     */
     private function validatedSchedule(Request $request): ?array
     {
         if (! $request->boolean('add_to_schedule')) {
@@ -239,7 +258,11 @@ class ApplicationManagementPreviewController extends Controller
         ];
     }
 
-    /** @param array{event_type: string, confirmation_status: string, starts_at: string, ends_at: string|null}|null $scheduleData */
+    /**
+     * 検証済みの予定情報を応募先に関連付けて登録する。締切には終了日時を設定しない。
+     *
+     * @param  array{event_type: string, confirmation_status: string, starts_at: string, ends_at: string|null}|null  $scheduleData
+     */
     private function createLinkedSchedule(CareerApplication $application, ?array $scheduleData): void
     {
         if ($scheduleData === null) {
@@ -265,6 +288,8 @@ class ApplicationManagementPreviewController extends Controller
     }
 
     /**
+     * 一覧表示に使う選考状況・詳細・絞り込み値を各応募先から組み立てる。
+     *
      * @param  Collection<int, CareerApplication>  $applications
      * @return array<int, array{id: int, company: string, program: string|null, status: string, statusGroup: string, statusDetail: string|null, filter: string, detail: string|null, resultDate: string|null}>
      */
@@ -288,7 +313,11 @@ class ApplicationManagementPreviewController extends Controller
         })->all();
     }
 
-    /** @return array{string, string|null} */
+    /**
+     * 保存形式が異なる過去の選考状況も、現在の大区分と詳細へ読み替える。
+     *
+     * @return array{string, string|null}
+     */
     private function statusParts(CareerApplication $application): array
     {
         $status = $application->status;
@@ -331,6 +360,7 @@ class ApplicationManagementPreviewController extends Controller
         };
     }
 
+    /** 選考状況を一覧の絞り込みで使う内部カテゴリへ変換する。 */
     private function statusFilter(string $group, string $originalStatus): string
     {
         return match ($group) {

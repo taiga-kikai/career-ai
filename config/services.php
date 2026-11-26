@@ -2,6 +2,7 @@
 
 return [
 
+    // Career AI固有の表示・機能フラグです。VERSIONはログイン画面のバージョン表示に使います。
     'career_ai' => [
         'web_enabled' => (bool) env('CAREER_AI_WEB_ENABLED', false),
         'version' => is_file(base_path('VERSION')) ? trim(file_get_contents(base_path('VERSION'))) : 'dev',
@@ -42,16 +43,19 @@ return [
         ],
     ],
 
+    // ES設問整理から使うGeminiの秘密キーとモデル名です。秘密キーは.env/ホスティング環境変数に置きます。
     'gemini' => [
         'api_key' => env('GEMINI_API_KEY'),
         'model' => env('GEMINI_MODEL', 'gemini-3.5-flash-lite'),
     ],
 
+    // Google OAuthのクライアント情報と、Googleから戻るURLです。
     'google_calendar' => [
         'client_id' => env('GOOGLE_CALENDAR_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CALENDAR_CLIENT_SECRET'),
         'redirect_uri' => env('GOOGLE_CALENDAR_REDIRECT_URI', rtrim(env('APP_URL', 'http://127.0.0.1:8000'), '/').'/google-calendar/callback'),
     ],
+    // 管理画面のDB容量・CU表示に使う設定です。APIキーは公開ファイルへ記載しません。
     'neon' => [
         'owner_email' => env('CAREER_AI_OWNER_EMAIL'),
         'plan' => env('NEON_PLAN', 'free'),

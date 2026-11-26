@@ -2,9 +2,14 @@
 
 namespace App;
 
+/** ローカル開発やデモ用に使う、実在人物・実在企業を含まない応募サンプルを定義する。 */
 class CareerApplicationDefaults
 {
-    /** @return array<int, array{category: string, company: string, program: string|null, status: string, detail: string}> */
+    /**
+     * データベースSeederが登録する架空の応募先データを返す。
+     *
+     * @return array<int, array{category: string, company: string, program: string|null, status: string, detail: string}>
+     */
     public static function records(): array
     {
         $groups = [

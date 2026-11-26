@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
+/** Google Calendar OAuthと予定同期のHTTP通信をコントローラーから分離してまとめる。 */
 class GoogleCalendarService
 {
     private const CALENDAR_COLOR_LABELS = [
@@ -16,6 +17,7 @@ class GoogleCalendarService
         'graphite' => ['id' => '167839c0-66d8-4ff6-b37d-a957a65af840', 'name' => 'グラファイト', 'color' => '#616161', 'aliases' => ['グラファイト', 'graphite']],
     ];
 
+    /** OAuthを始めるために必要なクライアント情報がすべて設定済みか確認する。 */
     public function isConfigured(): bool
     {
         return filled(config('services.google_calendar.client_id'))
@@ -23,6 +25,7 @@ class GoogleCalendarService
             && filled(config('services.google_calendar.redirect_uri'));
     }
 
+    /** 利用者の許可を求めるGoogle OAuth URLを作成し、CSRF対策用stateを含める。 */
     public function authorizationUrl(string $state): string
     {
         if (! $this->isConfigured()) {
@@ -41,7 +44,11 @@ class GoogleCalendarService
         ], '', '&', PHP_QUERY_RFC3986);
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Googleから戻った認可コードをアクセストークン等へ交換する。
+     *
+     * @return array<string, mixed>
+     */
     public function exchangeAuthorizationCode(string $code): array
     {
         $response = Http::asForm()->acceptJson()->post('https://oauth2.googleapis.com/token', [
@@ -59,7 +66,11 @@ class GoogleCalendarService
         return $response->json();
     }
 
-    /** @return array{id: string, htmlLink: string|null} */
+    /**
+     * 有効なアクセストークンを使い、予定を新規作成または既存イベントへ反映する。
+     *
+     * @return array{id: string, htmlLink: string|null}
+     */
     public function syncEvent(User $user, ScheduleEvent $event): array
     {
         $accessToken = $this->refreshAccessToken($user);
@@ -88,6 +99,7 @@ class GoogleCalendarService
         return ['id' => $data['id'], 'htmlLink' => is_string($data['htmlLink'] ?? null) ? $data['htmlLink'] : null];
     }
 
+    /** 保存済み更新トークンをGoogleへ送り、連携を取り消す。 */
     public function revoke(User $user): void
     {
         $refreshToken = $user->google_calendar_refresh_token;
@@ -99,6 +111,7 @@ class GoogleCalendarService
         Http::asForm()->post('https://oauth2.googleapis.com/revoke', ['token' => $refreshToken]);
     }
 
+    /** 保存済み更新トークンを使い、API呼び出しに使う短期アクセストークンを取得する。 */
     private function refreshAccessToken(User $user): string
     {
         $refreshToken = $user->google_calendar_refresh_token;
@@ -123,7 +136,11 @@ class GoogleCalendarService
         return $accessToken;
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Career AIの予定をGoogle Calendar APIが受け取る形式へ変換する。
+     *
+     * @return array<string, mixed>
+     */
     private function eventPayload(ScheduleEvent $event, string $eventLabelId): array
     {
         $start = $event->starts_at->timezone('Asia/Tokyo');
@@ -159,7 +176,11 @@ class GoogleCalendarService
         return $payload;
     }
 
-    /** @return array<string, string> */
+    /**
+     * 予定の確定・締切・予定状態を色分けするため、Google側に必要な色ラベルを用意する。
+     *
+     * @return array<string, string>
+     */
     private function ensureCalendarColorLabels(string $accessToken): array
     {
         $url = 'https://www.googleapis.com/calendar/v3/calendars/primary';

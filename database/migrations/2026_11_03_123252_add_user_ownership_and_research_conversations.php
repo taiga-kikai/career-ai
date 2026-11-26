@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
+// 就活データに利用者所有者IDを加え、招待・旧研究会話の保存構造を用意します。
 return new class extends Migration
 {
     public function up(): void

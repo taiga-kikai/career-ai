@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Str;
 
+// Laravelのキャッシュ保存先と、有効期限・キー接頭辞を設定します。
 return [
 
     /*

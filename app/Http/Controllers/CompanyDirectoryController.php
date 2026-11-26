@@ -9,6 +9,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
+/** 登録済み企業の情報入力、一覧表示、項目別ランキングを担当する。 */
 class CompanyDirectoryController extends Controller
 {
     private const FIELDS = [
@@ -21,6 +22,7 @@ class CompanyDirectoryController extends Controller
         'housing_allowance_yen' => ['label' => '住宅補助', 'unit' => '円/月', 'direction' => 'desc'],
     ];
 
+    /** 保存済みプロフィールだけを集め、入力済み項目ごとの順位を計算する。 */
     public function index(Request $request): View
     {
         $this->ensureLocalPreview();
@@ -36,7 +38,9 @@ class CompanyDirectoryController extends Controller
             })
             ->whereHas('applications', fn ($query) => $category ? $query->where('category', $category) : $query)
             ->with(['applications' => function ($query) use ($category): void {
-                if ($category) $query->where('category', $category);
+                if ($category) {
+                    $query->where('category', $category);
+                }
                 $query->orderBy('category')->orderBy('company');
             }])
             ->orderBy('company_name')->get();
@@ -45,15 +49,18 @@ class CompanyDirectoryController extends Controller
             $ranked = $profiles->filter(fn ($profile) => $profile->{$field} !== null)
                 ->sort(function ($left, $right) use ($fieldInfo, $field): int {
                     $comparison = (float) $left->{$field} <=> (float) $right->{$field};
+
                     return $fieldInfo['direction'] === 'desc' ? -$comparison : $comparison;
                 })->values();
             $priorValue = null;
             $priorRank = null;
+
             return ['key' => $field, ...$fieldInfo, 'companies' => $ranked->map(function ($profile, $index) use ($field, &$priorValue, &$priorRank): array {
                 $value = (float) $profile->{$field};
                 $rank = $priorRank !== null && $value === $priorValue ? $priorRank : $index + 1;
                 $priorValue = $value;
                 $priorRank = $rank;
+
                 return ['profile' => $profile, 'rank' => $rank, 'value' => $profile->{$field}];
             })->all()];
         })->values()->all();
@@ -72,6 +79,7 @@ class CompanyDirectoryController extends Controller
         ]);
     }
 
+    /** 応募先の企業プロフィールを用意し、編集フォームを表示する。 */
     public function edit(CareerApplication $application): View
     {
         $this->ensureLocalPreview();
@@ -80,10 +88,12 @@ class CompanyDirectoryController extends Controller
             $profile = auth()->user()->companyProfiles()->firstOrCreate(['company_name' => trim($application->company)]);
             $application->companyProfile()->associate($profile)->save();
         }
+
         return view('research.edit', ['profile' => $profile, 'application' => $application,
             'categories' => ['main' => '本選考', 'summer' => '夏インターン', 'autumn' => '秋・冬インターン']]);
     }
 
+    /** 数値・テキスト欄を検証して保存し、同じ選考区分の一覧へ戻す。 */
     public function update(Request $request, CompanyProfile $profile): RedirectResponse
     {
         $this->ensureLocalPreview();
@@ -102,17 +112,29 @@ class CompanyDirectoryController extends Controller
         ]);
         unset($validated['category']);
         $profile->fill($validated)->save();
+
         return to_route('research.index', ['category' => $request->input('category')])
             ->with('research_saved', '企業情報を保存しました。ランキングを更新しました。');
     }
 
+    /** 企業プロフィールに比較・表示対象となる入力済み項目があるか調べる。 */
     private function profileHasData(CompanyProfile $profile): bool
     {
-        foreach (array_keys(self::FIELDS) as $field) if ($profile->{$field} !== null) return true;
-        foreach (['benefits', 'work_locations', 'notes'] as $field) if (filled($profile->{$field})) return true;
+        foreach (array_keys(self::FIELDS) as $field) {
+            if ($profile->{$field} !== null) {
+                return true;
+            }
+        }
+        foreach (['benefits', 'work_locations', 'notes'] as $field) {
+            if (filled($profile->{$field})) {
+                return true;
+            }
+        }
+
         return false;
     }
 
+    /** ローカルまたは機能有効化済み環境でのみ企業比較機能を表示可能にする。 */
     private function ensureLocalPreview(): void
     {
         abort_unless(app()->environment('local') || config('services.career_ai.web_enabled'), 404);

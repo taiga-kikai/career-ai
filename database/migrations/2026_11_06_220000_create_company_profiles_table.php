@@ -5,6 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
+// 利用者が入力する給与・休日・福利厚生等の企業プロフィールを作り、応募先へ関連付けます。
 return new class extends Migration
 {
     public function up(): void

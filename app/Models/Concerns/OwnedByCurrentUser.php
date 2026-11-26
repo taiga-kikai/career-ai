@@ -6,8 +6,10 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
+/** Eloquentモデルの検索・新規作成を現在のログイン利用者に結び付ける共通処理。 */
 trait OwnedByCurrentUser
 {
+    /** 全検索へ所有者条件を付け、ログイン中の新規レコードには所有者IDを設定する。 */
     protected static function bootOwnedByCurrentUser(): void
     {
         static::addGlobalScope('owner', function (Builder $query): void {

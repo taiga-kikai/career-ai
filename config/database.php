@@ -3,6 +3,7 @@
 use Illuminate\Support\Str;
 use Pdo\Mysql;
 
+// SQLite・MySQL・PostgreSQL等の接続先と、マイグレーションの設定を定義します。
 return [
 
     /*

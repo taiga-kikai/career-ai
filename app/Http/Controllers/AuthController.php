@@ -10,8 +10,10 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 
+/** ログイン画面、PIN認証、デモログイン、ログアウトを扱う。 */
 class AuthController extends Controller
 {
+    /** ログイン済みならホームへ移動し、未ログインならログイン画面を表示する。 */
     public function showLogin(): View|RedirectResponse
     {
         if (Auth::check()) {
@@ -21,6 +23,7 @@ class AuthController extends Controller
         return view('welcome');
     }
 
+    /** 入力検証と試行回数制限を行ってPINを照合し、成功時にセッションを作り直す。 */
     public function authenticate(Request $request): RedirectResponse
     {
         $validated = $request->validate([
@@ -44,6 +47,7 @@ class AuthController extends Controller
         return to_route('home.preview');
     }
 
+    /** 開発環境または明示的に有効化された環境だけで共有デモアカウントにログインする。 */
     public function demo(Request $request): RedirectResponse
     {
         abort_unless(app()->environment('local') || config('services.career_ai.demo_login_enabled'), 404);
@@ -54,6 +58,7 @@ class AuthController extends Controller
         return to_route('home.preview');
     }
 
+    /** 認証情報とセッションを破棄してログイン画面へ戻す。 */
     public function logout(Request $request): RedirectResponse
     {
         Auth::logout();

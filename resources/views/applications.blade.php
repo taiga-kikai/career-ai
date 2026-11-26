@@ -1,3 +1,4 @@
+{{-- 応募先一覧・追加編集フォームと、企業名の重複確認などの画面操作をまとめたページです。 --}}
 <!doctype html>
 <html lang="ja">
 <head>
@@ -115,6 +116,7 @@
         <div class="p-5 sm:p-6"><div class="mb-4 flex items-start justify-between gap-3"><div><p class="text-[10px] font-semibold tracking-[0.14em] text-[#a66c48]">STATUS DETAIL</p><h3 id="status-detail-title" class="mt-1 text-lg font-semibold">選考の種類</h3><p class="mt-1 text-xs text-[#80684f]">内容を選択してください。</p></div><button id="status-detail-close" type="button" aria-label="選考の種類を閉じる" class="grid size-8 place-items-center rounded-full bg-[#f7efe3] text-[#80684f] hover:bg-[#f0dfc8]">×</button></div><div id="status-detail-options" class="flex flex-wrap gap-2" role="group" aria-label="選考の種類"></div><label id="status-detail-other-wrap" hidden class="mt-4 block text-xs font-semibold text-[#685442]">新しい項目<input id="status-detail-other" type="text" maxlength="70" placeholder="例：書類選考" class="mt-1.5 w-full rounded-xl border border-[#e8ddce] bg-white px-3.5 py-3 text-sm font-normal outline-none focus:border-[#c88b64] focus:ring-2 focus:ring-[#c88b64]/15"></label><p id="status-detail-error" hidden role="alert" class="mt-2 text-xs text-[#98553c]">項目を選ぶか、新しい項目を入力してください。</p><div class="mt-5 flex justify-end gap-2"><button id="status-detail-cancel" type="button" class="rounded-xl border border-[#e8ddce] px-4 py-2.5 text-sm font-medium text-[#685442] hover:bg-[#f7efe3]">戻る</button><button id="status-detail-add" type="button" hidden class="rounded-xl bg-[#31574a] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#25483d]">追加して選択</button></div></div>
     </dialog>
 
+    {{-- 選考状況の補助入力、検索、類似企業の確認、予定の自動入力を行います。保存側の検証はControllerでも行います。 --}}
     <script>
         const menuOpen = document.getElementById('menu-toggle');
         const sidebar = document.getElementById('sidebar');

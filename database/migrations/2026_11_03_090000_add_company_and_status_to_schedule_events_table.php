@@ -5,6 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
+// 既存予定に企業名・選考区分・確定状態を追加し、過去データを補完します。
 return new class extends Migration
 {
     public function up(): void

@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 class ScheduleEventFactory extends Factory
 {
     /**
-     * Define the model's default state.
+     * 面接・締切などのテスト用予定データを作る。
      *
      * @return array<string, mixed>
      */

@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 class ApplicationDocumentFactory extends Factory
 {
     /**
-     * Define the model's default state.
+     * ES原文と設問・回答を持つ、テスト用書類の初期値を作る。
      *
      * @return array<string, mixed>
      */

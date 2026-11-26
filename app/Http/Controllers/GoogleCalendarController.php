@@ -10,8 +10,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Throwable;
 
+/** Google OAuthの開始・戻り、連携解除、予定のGoogleカレンダー同期を扱う。 */
 class GoogleCalendarController extends Controller
 {
+    /** OAuthのstateをセッションに保存し、Googleの認可画面へ移動する。 */
     public function connect(Request $request, GoogleCalendarService $calendar): RedirectResponse
     {
         $this->ensureLocalPreview();
@@ -34,6 +36,7 @@ class GoogleCalendarController extends Controller
         return redirect()->away($calendar->authorizationUrl($state));
     }
 
+    /** OAuthの戻り値を検証し、トークン保存後に必要なら保留中の予定を同期する。 */
     public function callback(Request $request, GoogleCalendarService $calendar): RedirectResponse
     {
         $this->ensureLocalPreview();
@@ -85,6 +88,7 @@ class GoogleCalendarController extends Controller
         }
     }
 
+    /** Google側の認証を取り消し、アプリ内に保管した更新トークンを削除する。 */
     public function disconnect(Request $request, GoogleCalendarService $calendar): RedirectResponse
     {
         $this->ensureLocalPreview();
@@ -101,6 +105,7 @@ class GoogleCalendarController extends Controller
         return to_route('schedule.index')->with('schedule_saved', 'Googleカレンダーとの連携を解除しました。登録済みの予定はGoogleカレンダーに残っています。');
     }
 
+    /** 所有者を確認した予定をGoogleへ登録または更新し、イベントIDを保存する。 */
     public function storeEvent(Request $request, ScheduleEvent $event, GoogleCalendarService $calendar): RedirectResponse
     {
         $this->ensureLocalPreview();
@@ -128,11 +133,13 @@ class GoogleCalendarController extends Controller
         }
     }
 
+    /** ローカルまたはGoogle連携を有効化した環境だけで処理を許可する。 */
     private function ensureLocalPreview(): void
     {
         abort_unless(app()->environment('local') || config('services.career_ai.google_calendar_enabled'), 404);
     }
 
+    /** 共有デモアカウントから個人のGoogleカレンダーへ接続できないようにする。 */
     private function ensureCalendarAccess(Request $request): void
     {
         abort_unless($request->user()->email !== 'demo@career-ai.local', 403, '共有デモアカウントではGoogleカレンダーを連携できません。個人アカウントでログインしてください。');

@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 class CareerApplicationFactory extends Factory
 {
     /**
-     * Define the model's default state.
+     * 区分・架空企業名・選考状況を持つ、テスト用応募先の初期値を作る。
      *
      * @return array<string, mixed>
      */

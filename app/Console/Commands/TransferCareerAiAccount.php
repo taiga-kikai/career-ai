@@ -7,6 +7,7 @@ use Illuminate\Database\Connection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
+/** ローカルMySQLの利用者と所有データを別接続のPostgreSQLへコピーする運用コマンド。 */
 class TransferCareerAiAccount extends Command
 {
     protected $signature = 'career-ai:transfer-account {email? : Email address of the local account to transfer} {--all-users : Transfer every local account and its owned career data}';
@@ -30,6 +31,7 @@ class TransferCareerAiAccount extends Command
         'research_conversations',
     ];
 
+    /** 接続先とテーブルを検証し、ユーザーIDや応募IDを対応付けながら一括移行する。 */
     public function handle(): int
     {
         $source = DB::connection();
@@ -143,6 +145,7 @@ class TransferCareerAiAccount extends Command
         return self::SUCCESS;
     }
 
+    /** 同じメールの移行先ユーザーに既存データがあれば、誤った上書きを避けるため検出する。 */
     private function userHasOwnedData(Connection $connection, int $userId): bool
     {
         foreach (self::USER_OWNED_TABLES as $tableName) {
@@ -156,6 +159,8 @@ class TransferCareerAiAccount extends Command
     }
 
     /**
+     * 招待リンクを、移行先に対応する作成者IDへ置き換えてコピーする。
+     *
      * @param  array<int, int>  $userIdMap
      */
     private function copyInvitations(Connection $source, Connection $target, array $userIdMap): int
@@ -181,6 +186,8 @@ class TransferCareerAiAccount extends Command
     }
 
     /**
+     * 応募先をコピーし、関連テーブルの外部キー変換に使うID対応表を作る。
+     *
      * @return array<int, int>
      */
     private function copyApplications(Connection $source, Connection $target, int $sourceUserId, int $targetUserId): array
@@ -201,6 +208,8 @@ class TransferCareerAiAccount extends Command
     }
 
     /**
+     * 所有者IDと応募先IDを移行先に置き換え、指定された所有データ行をコピーする。
+     *
      * @param  array<int, int>  $applicationIdMap
      */
     private function copyOwnedRows(

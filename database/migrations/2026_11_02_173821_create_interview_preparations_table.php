@@ -4,6 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
+// 自己紹介、志望動機、逆質問など応募先ごとの面接準備テーブルを作成します。
 return new class extends Migration
 {
     /**

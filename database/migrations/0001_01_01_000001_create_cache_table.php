@@ -4,6 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
+// Laravelが一時データを共有保存するキャッシュ・ロック用テーブルを作成・削除します。
 return new class extends Migration
 {
     /**

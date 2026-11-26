@@ -5,6 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
+// 既存行の所有者を補完したうえでuser_idを必須にし、利用者ごとの分離を強制します。
 return new class extends Migration
 {
     public function up(): void

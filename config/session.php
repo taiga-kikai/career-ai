@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Str;
 
+// ログイン状態などを保持するセッションの保存方式・有効期限・Cookie設定です。
 return [
 
     /*

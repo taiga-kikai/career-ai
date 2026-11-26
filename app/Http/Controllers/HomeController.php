@@ -8,8 +8,10 @@ use App\Models\ScheduleEvent;
 use App\Services\NeonUsageService;
 use Illuminate\Contracts\View\View;
 
+/** ホーム画面に応募状況、近い予定、書類件数、企業情報件数を集める。 */
 class HomeController extends Controller
 {
+    /** ログイン利用者の就活状況を集計し、ホームと許可された場合のNeon利用カードへ渡す。 */
     public function __invoke(NeonUsageService $neonUsage): View
     {
         $applications = CareerApplication::query()->withCount('documents')->get();

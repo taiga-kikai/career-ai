@@ -8,10 +8,12 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Throwable;
 
+/** 設定された管理者へ、DB容量とNeon CUの実測値または概算値を返す。 */
 class NeonUsageService
 {
     /**
-     * Return infrastructure usage only to the configured owner account.
+     * 利用者を照合し、許可された場合だけDB容量・CU利用状況を集めて返す。
+     * FreeプランのCUはアプリ接続記録による推定、有料プランでは設定時にNeon API値を使う。
      *
      * @return array<string, mixed>|null
      */

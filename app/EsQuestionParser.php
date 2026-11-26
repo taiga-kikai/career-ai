@@ -2,15 +2,22 @@
 
 namespace App;
 
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Http\Client\ConnectionException;
 use RuntimeException;
 use Throwable;
 
+/**
+ * ESの貼り付け文章を設問と回答の組に分ける。Geminiが使えない場合も入力を失わないよう、ローカル整理へ切り替える。
+ */
 class EsQuestionParser
 {
-    /** @return array{questions: array<int, array{question: string, answer: string}>, source: string, message: string} */
+    /**
+     * 設定を見てGeminiまたはローカル処理を選び、画面表示用の結果を返す。
+     *
+     * @return array{questions: array<int, array{question: string, answer: string}>, source: string, message: string}
+     */
     public function parse(string $rawText): array
     {
         if (! config('services.gemini.api_key')) {
@@ -38,7 +45,12 @@ class EsQuestionParser
         }
     }
 
-    /** @return array<int, array{question: string, answer: string}> */
+    /**
+     * 本文をGoogleへ送り、構造化されたJSON応答を設問・回答の配列へ整える。
+     * 入力文やAPIキーをログに残さず、HTTPエラーの原因を調べられる情報だけ記録する。
+     *
+     * @return array<int, array{question: string, answer: string}>
+     */
     private function parseWithGemini(string $rawText): array
     {
         $schema = [
@@ -145,6 +157,7 @@ class EsQuestionParser
         return $questions;
     }
 
+    /** 利用者向けに、接続証明書エラーとその他のGemini失敗を区別した案内文を返す。 */
     private function fallbackMessage(Throwable $exception): string
     {
         for ($cause = $exception; $cause !== null; $cause = $cause->getPrevious()) {
@@ -156,7 +169,12 @@ class EsQuestionParser
         return 'Geminiで整理できなかったため、簡易整理に切り替えました。結果を確認してください。';
     }
 
-    /** @return array<int, array{question: string, answer: string}> */
+    /**
+     * 質問らしい見出しや依頼文を手掛かりに、外部APIを使わず本文を分割する。
+     * 自動判定できない場合も原文を残し、後から手直しできる形で返す。
+     *
+     * @return array<int, array{question: string, answer: string}>
+     */
     private function splitLocally(string $rawText): array
     {
         $lines = preg_split('/\R/u', trim($rawText)) ?: [];

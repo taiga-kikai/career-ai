@@ -4,6 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
+// Google連携用の暗号化更新トークンと、同期先イベントIDの列を追加・削除します。
 return new class extends Migration
 {
     /**

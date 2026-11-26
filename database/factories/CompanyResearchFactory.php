@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 class CompanyResearchFactory extends Factory
 {
     /**
-     * Define the model's default state.
+     * 旧企業研究機能のデータを作るテスト用初期値を定義する。
      *
      * @return array<string, mixed>
      */

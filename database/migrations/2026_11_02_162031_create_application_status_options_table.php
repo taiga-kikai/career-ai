@@ -4,6 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
+// 利用者が追加した選考状況ラベルを区分ごとに保存するテーブルを作成します。
 return new class extends Migration
 {
     /**

@@ -1,3 +1,4 @@
+{{-- 予定の新規登録・編集フォームです。種別に応じた入力欄と、開始時刻から終了時刻を補助するJavaScriptを含みます。 --}}
 @extends('documents.layout')
 @section('title', $event ? '予定を編集' : '予定を追加')
 @section('header-title', 'スケジュール')
@@ -30,6 +31,7 @@
     <label class="mt-5 block text-sm font-semibold text-[#685442]">メモ（任意）<textarea name="notes" maxlength="10000" rows="4" placeholder="持ち物、事前準備、確認したいことなど" class="mt-2 w-full rounded-xl border border-[#e8ddce] bg-white px-4 py-3 text-sm font-normal leading-7 outline-none focus:border-[#c88b64]">{{ old('notes', $event?->notes ?? '') }}</textarea></label>
     <div class="mt-7 flex flex-wrap justify-between gap-3"><a href="{{ route('schedule.index', ['month' => $event ? $event->starts_at->timezone('Asia/Tokyo')->format('Y-m') : now('Asia/Tokyo')->format('Y-m')]) }}" class="rounded-xl border border-[#e8ddce] px-4 py-2.5 text-sm font-semibold text-[#685442] hover:bg-[#f7efe3]">キャンセル</a><div class="flex gap-2">@if ($event)<button form="delete-schedule-event" type="submit" class="rounded-xl border border-[#e7b9a8] px-4 py-2.5 text-sm font-semibold text-[#a94736] hover:bg-[#fff0eb]">削除</button>@endif<button type="submit" class="rounded-xl bg-[#31574a] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#25483d]">保存</button></div></div>
 </form>
+{{-- 応募先選択の企業名補完、締切時の終了時刻非表示、開始から一時間後の初期値を管理します。 --}}
 <script>
 (() => {
     const applicationLink = document.querySelector('[data-application-link]');

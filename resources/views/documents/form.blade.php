@@ -1,3 +1,4 @@
+{{-- ES原文と設問・回答を編集する共通フォームです。下のJavaScriptがGemini整理と設問欄の追加・削除を扱います。 --}}
 @php($isEditing = isset($document))
 @php($questionRows = old('questions', $isEditing ? ($document->questions ?? []) : [['question' => '', 'answer' => '']]))
 <form id="es-document-form" method="POST" action="{{ $isEditing ? route('documents.update', $document) : route('documents.store') }}" data-parse-url="{{ route('documents.parse') }}" class="rounded-[1.5rem] border border-[#eadfce] bg-[#fffaf3] p-5 sm:p-7">
@@ -41,6 +42,7 @@
     <div class="mt-7 flex flex-wrap justify-end gap-2"><a href="{{ $isEditing ? route('documents.application', $document->application) : route('documents.index', ['category' => $selectedCategory]) }}" class="rounded-xl border border-[#e8ddce] px-4 py-2.5 text-sm font-semibold text-[#685442] hover:bg-[#f7efe3]">キャンセル</a><button type="submit" class="rounded-xl bg-[#31574a] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#25483d]">保存</button></div>
 </form>
 @push('scripts')
+{{-- 整理APIへ原文を送り、結果を編集欄へ反映します。送信中は二重操作を防ぎ、結果は保存前に利用者が確認できます。 --}}
 <script>
     const editor = document.getElementById('question-editor');
     const message = document.getElementById('parse-message');

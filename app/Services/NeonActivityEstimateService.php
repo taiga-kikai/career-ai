@@ -6,10 +6,12 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
+/** PostgreSQLへのアクセス間隔から、Neon FreeのCU利用時間を概算する。 */
 class NeonActivityEstimateService
 {
     /**
-     * Record one authenticated app request that used the PostgreSQL connection.
+     * PostgreSQL接続を使ったアプリ利用を月別テーブルに記録する。
+     * 推定記録の失敗で通常の画面リクエストを止めない。
      */
     public function recordActivity(): void
     {
@@ -60,7 +62,11 @@ class NeonActivityEstimateService
         }
     }
 
-    /** @return array{used_cu_hours: float, remaining_cu_hours: float, percent: float, active_hours_remaining: float, updated_at: CarbonImmutable|null} */
+    /**
+     * 記録済み時間と設定CUを使い、当月の利用量・残量の推定値を返す。
+     *
+     * @return array{used_cu_hours: float, remaining_cu_hours: float, percent: float, active_hours_remaining: float, updated_at: CarbonImmutable|null}
+     */
     public function currentMonthEstimate(float $limitCuHours): array
     {
         $now = CarbonImmutable::now('UTC');

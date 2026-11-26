@@ -11,14 +11,14 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 class UserInvitationFactory extends Factory
 {
     /**
-     * Define the model's default state.
+     * 招待リンクのテストデータを作る。属性はテスト内容に合わせて指定する。
      *
      * @return array<string, mixed>
      */
     public function definition(): array
     {
         return [
-            //
+            // 生トークンを推測した固定値にしないよう、空の初期状態を返す。
         ];
     }
 }

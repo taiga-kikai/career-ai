@@ -22,10 +22,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'work_locations',
     'notes',
 ])]
+/** 利用者が入力した給与・休日・福利厚生などの企業比較情報を表す。 */
 class CompanyProfile extends Model
 {
     use OwnedByCurrentUser;
 
+    /** DBの数値列を数値型として扱い、計算や比較時の型を揃える。 */
     protected function casts(): array
     {
         return [
@@ -39,11 +41,13 @@ class CompanyProfile extends Model
         ];
     }
 
+    /** この企業プロフィールを所有する利用者を返す。 */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /** 同じ企業プロフィールを参照する本選考・インターン応募を返す。 */
     public function applications(): HasMany
     {
         return $this->hasMany(CareerApplication::class, 'company_profile_id');
