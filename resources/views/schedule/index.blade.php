@@ -13,13 +13,40 @@
         <div class="grid grid-cols-7 border-b border-[#eee3d4] bg-[#f8f1e7] text-center text-[10px] font-semibold text-[#80684f] sm:text-xs">@foreach (['月', '火', '水', '木', '金', '土', '日'] as $weekday)<div class="py-3">{{ $weekday }}</div>@endforeach</div>
         <div class="grid grid-cols-7">@foreach ($days as $day)@php($dayEvents = $eventsByDay->get($day->format('Y-m-d'), collect()))<div class="min-h-24 border-b border-r border-[#eee3d4] p-1.5 sm:min-h-32 sm:p-2.5 {{ $day->month === $month->month ? 'bg-[#fffaf3]' : 'bg-[#faf6ef] text-[#b5a58e]' }}"><a href="{{ route('schedule.create', ['date' => $day->format('Y-m-d')]) }}" class="inline-grid size-7 place-items-center rounded-full text-xs font-semibold hover:bg-[#f3e5cf] {{ $day->isToday() ? 'bg-[#31574a] text-white hover:bg-[#25483d]' : '' }}">{{ $day->day }}</a><div class="mt-1 space-y-1">@foreach ($dayEvents->take(2) as $event)<a href="{{ route('schedule.edit', $event) }}" class="block overflow-hidden rounded-md border px-1.5 py-1 text-[9px] font-semibold leading-tight {{ $isDeadline($event) ? $deadlineColor : ($statusColors[$event->confirmation_status] ?? $statusColors['planned']) }} sm:text-[10px]"><span class="block whitespace-nowrap">{{ $isDeadline($event) ? '~'.$event->starts_at->timezone('Asia/Tokyo')->format('H:i') : $event->starts_at->timezone('Asia/Tokyo')->format('H:i').($event->ends_at ? '-'.$event->ends_at->timezone('Asia/Tokyo')->format('H:i') : '') }}</span><span class="block truncate">{{ $typeNames[$event->event_type] ?? '' }}@if ($event->title && $event->title !== ($typeNames[$event->event_type] ?? '')) ({{ $event->title }})@endif {{ $event->company_name ?: '' }}</span></a>@endforeach @if ($dayEvents->count() > 2)<details class="rounded-md bg-[#f8f1e7] px-1.5 py-1 text-[9px] text-[#685442]"><summary class="cursor-pointer font-semibold hover:text-[#a66c48]">ほか{{ $dayEvents->count() - 2 }}件</summary><div class="mt-1 space-y-1">@foreach ($dayEvents->skip(2) as $hiddenEvent)<a href="{{ route('schedule.edit', $hiddenEvent) }}" class="block overflow-hidden rounded-md border px-1.5 py-1 text-[9px] font-semibold leading-tight {{ $isDeadline($hiddenEvent) ? $deadlineColor : ($statusColors[$hiddenEvent->confirmation_status] ?? $statusColors['planned']) }} sm:text-[10px]"><span class="block whitespace-nowrap">{{ $isDeadline($hiddenEvent) ? '~'.$hiddenEvent->starts_at->timezone('Asia/Tokyo')->format('H:i') : $hiddenEvent->starts_at->timezone('Asia/Tokyo')->format('H:i').($hiddenEvent->ends_at ? '-'.$hiddenEvent->ends_at->timezone('Asia/Tokyo')->format('H:i') : '') }}</span><span class="block truncate">{{ $typeNames[$hiddenEvent->event_type] ?? '' }}@if ($hiddenEvent->title && $hiddenEvent->title !== ($typeNames[$hiddenEvent->event_type] ?? '')) ({{ $hiddenEvent->title }})@endif {{ $hiddenEvent->company_name ?: '' }}</span></a>@endforeach</div></details>@endif</div></div>@endforeach</div>
     </div>
-    <div class="divide-y divide-[#eee3d4] sm:hidden">
-        @forelse ($events as $event)
-            @php($eventDate = $event->starts_at->timezone('Asia/Tokyo'))
-            <a href="{{ route('schedule.edit', $event) }}" class="flex items-start gap-3 px-4 py-3 hover:bg-[#f8f1e7]"><span class="w-12 shrink-0 text-center"><span class="block text-[10px] text-[#a28c73]">{{ $eventDate->translatedFormat('D') }}</span><span class="text-lg font-semibold">{{ $eventDate->format('j') }}</span></span><span class="min-w-0 flex-1"><span class="flex flex-wrap items-center gap-1.5"><span class="rounded-full border px-2 py-0.5 text-[10px] font-semibold {{ $statusColors[$event->confirmation_status] ?? $statusColors['planned'] }}">{{ $event->confirmation_status === 'confirmed' ? '確定' : '予定' }}</span><span class="rounded-full px-2 py-0.5 text-[10px] font-semibold {{ $isDeadline($event) ? 'bg-[#e0f2ef] text-[#00695c]' : 'bg-[#f3eadb] text-[#685442]' }}">{{ $typeNames[$event->event_type] ?? 'その他' }}</span><span class="text-xs font-semibold">{{ $isDeadline($event) ? '~'.$eventDate->format('H:i') : $eventDate->format('H:i').($event->ends_at ? '〜'.$event->ends_at->timezone('Asia/Tokyo')->format('H:i') : '') }}</span></span><span class="mt-1 block truncate text-sm font-semibold">{{ $typeNames[$event->event_type] ?? 'その他' }}@if ($event->title && $event->title !== ($typeNames[$event->event_type] ?? ''))（{{ $event->title }}）@endif　{{ $event->company_name ?: '' }}</span></span></a>
-        @empty
-            <p class="px-4 py-6 text-center text-sm text-[#80684f]">この月の予定はありません</p>
-        @endforelse
+    <div class="sm:hidden" role="group" aria-label="月間カレンダー">
+        <div class="grid grid-cols-7 border-b border-[#eee3d4] bg-[#f8f1e7] text-center text-[11px] font-semibold text-[#80684f]">
+            @foreach (['月', '火', '水', '木', '金', '土', '日'] as $weekday)
+                <div class="py-2.5">{{ $weekday }}</div>
+            @endforeach
+        </div>
+        <div class="grid grid-cols-7">
+            @foreach ($days as $day)
+                @php($dayEvents = $eventsByDay->get($day->format('Y-m-d'), collect()))
+                <div class="min-w-0 border-b border-r border-[#eee3d4] p-0.5 {{ $day->month === $month->month ? 'bg-[#fffaf3]' : 'bg-[#faf6ef] text-[#b5a58e]' }}">
+                    <a href="{{ route('schedule.create', ['date' => $day->format('Y-m-d')]) }}" @if ($day->isToday()) aria-current="date" @endif aria-label="{{ $day->locale('ja')->isoFormat('M月D日（ddd）') }}{{ $dayEvents->isNotEmpty() ? '、予定'.$dayEvents->count().'件' : '' }}。タップして予定を追加" class="flex min-h-12 w-full flex-col items-center gap-0.5 rounded-md py-1 text-xs hover:bg-[#f3e5cf] focus:bg-[#f3e5cf] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#c88b64]">
+                        <span class="grid size-7 place-items-center rounded-full font-semibold {{ $day->isToday() ? 'bg-[#31574a] text-white' : '' }}">{{ $day->day }}</span>
+                        @if ($dayEvents->isNotEmpty())
+                            <span class="flex h-2 items-center gap-0.5" aria-hidden="true">
+                                @foreach ($dayEvents->take(3) as $event)
+                                    <span class="size-1.5 rounded-full {{ $isDeadline($event) ? 'bg-[#00796b]' : ($event->confirmation_status === 'confirmed' ? 'bg-[#d50000]' : 'bg-[#616161]') }}"></span>
+                                @endforeach
+                            </span>
+                            @if ($dayEvents->count() > 3)
+                                <span class="text-[8px] font-semibold leading-none">+{{ $dayEvents->count() - 3 }}</span>
+                            @endif
+                        @else
+                            <span class="h-2" aria-hidden="true"></span>
+                        @endif
+                    </a>
+                </div>
+            @endforeach
+        </div>
+        <div class="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 border-t border-[#eee3d4] px-3 py-2 text-[10px] text-[#80684f]" aria-label="予定の色">
+            <span class="inline-flex items-center gap-1"><span class="size-1.5 rounded-full bg-[#616161]" aria-hidden="true"></span>予定</span>
+            <span class="inline-flex items-center gap-1"><span class="size-1.5 rounded-full bg-[#d50000]" aria-hidden="true"></span>確定</span>
+            <span class="inline-flex items-center gap-1"><span class="size-1.5 rounded-full bg-[#00796b]" aria-hidden="true"></span>締切</span>
+        </div>
+        <p class="px-3 pb-2 text-center text-[11px] text-[#80684f]">日付をタップすると、その日を指定して予定を追加できます。</p>
     </div>
 </section>
 <section class="overflow-hidden rounded-[1.75rem] border border-[#eadfce] bg-[#fffaf3]"><div class="border-b border-[#eee3d4] px-5 py-4 sm:px-6"><h2 class="text-lg font-semibold">{{ $month->format('n月') }}の予定 <span class="ml-1 text-sm font-medium text-[#9b876f]">{{ $events->count() }}件</span></h2><div class="mt-2 flex flex-wrap gap-2 text-xs"><span class="rounded-full border px-2.5 py-1 {{ $statusColors['planned'] }}">予定・グレー</span><span class="rounded-full border px-2.5 py-1 {{ $statusColors['confirmed'] }}">確定・赤</span><span class="rounded-full border px-2.5 py-1 {{ $deadlineColor }}">締切・ユーカリ</span></div></div><div class="divide-y divide-[#eee3d4]">
