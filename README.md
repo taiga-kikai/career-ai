@@ -115,7 +115,7 @@ RenderのBlueprint設定はリポジトリ直下の`render.yaml`にあります�
 変更はGitのコミットとタグで記録しています。リリースタグはGitHubの[Tags](https://github.com/taiga-kikai/career-ai/tags)から確認できます。
 
 <details>
-<summary>v1.00〜v1.46の変更内容</summary>
+<summary>v1.00〜v1.47の変更内容</summary>
 
 | バージョン | 主な変更 |
 | --- | --- |
@@ -166,6 +166,7 @@ RenderのBlueprint設定はリポジトリ直下の`render.yaml`にあります�
 | v1.44 | 応募先追加時に一致・類似企業を確認 |
 | v1.45 | 応募先と予定の同時登録で終了時刻を一時間後に自動入力 |
 | v1.46 | スマートフォンでも月間カレンダーを表示し、日付から予定を追加 |
+| v1.47 | 予定の完了状態をページ移動なしで保存し、操作した位置に結果を表示 |
 
 </details>
 

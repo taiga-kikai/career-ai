@@ -7,6 +7,7 @@ use App\Models\ScheduleEvent;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -93,13 +94,22 @@ class ScheduleController extends Controller
         return to_route('schedule.index', ['month' => $month])->with('schedule_saved', '予定を削除しました。');
     }
 
-    /** 完了状態を反転し、同じ画面へ結果を返す。 */
-    public function toggleCompleted(ScheduleEvent $event): RedirectResponse
+    /** 完了状態を反転し、画面内更新または通常の画面遷移で結果を返す。 */
+    public function toggleCompleted(Request $request, ScheduleEvent $event): JsonResponse|RedirectResponse
     {
         $this->ensureLocalPreview();
         $event->update(['is_completed' => ! $event->is_completed]);
 
-        return back()->with('schedule_saved', $event->is_completed ? '予定を完了にしました。' : '予定を未完了に戻しました。');
+        $message = $event->is_completed ? '予定を完了にしました。' : '予定を未完了に戻しました。';
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'is_completed' => $event->is_completed,
+                'message' => $message,
+            ]);
+        }
+
+        return back()->with('schedule_saved', $message);
     }
 
     /** API連携が使えない場合に、内容を埋めたGoogle Calendarの登録画面を開く。 */

@@ -52,9 +52,62 @@
 <section class="overflow-hidden rounded-[1.75rem] border border-[#eadfce] bg-[#fffaf3]"><div class="border-b border-[#eee3d4] px-5 py-4 sm:px-6"><h2 class="text-lg font-semibold">{{ $month->format('n月') }}の予定 <span class="ml-1 text-sm font-medium text-[#9b876f]">{{ $events->count() }}件</span></h2><div class="mt-2 flex flex-wrap gap-2 text-xs"><span class="rounded-full border px-2.5 py-1 {{ $statusColors['planned'] }}">予定・グレー</span><span class="rounded-full border px-2.5 py-1 {{ $statusColors['confirmed'] }}">確定・赤</span><span class="rounded-full border px-2.5 py-1 {{ $deadlineColor }}">締切・ユーカリ</span></div></div><div class="divide-y divide-[#eee3d4]">
     @forelse ($events as $event)
         @php($deadline = $isDeadline($event))
-        <article class="flex flex-wrap items-start justify-between gap-4 border-l-4 px-5 py-4 sm:px-6 {{ $deadline ? 'border-l-[#00796b]' : ($event->confirmation_status === 'confirmed' ? 'border-l-[#d50000]' : 'border-l-[#777]') }} {{ $event->is_completed ? 'opacity-60' : '' }}"><div class="flex min-w-0 gap-4"><div class="w-16 shrink-0 text-center"><p class="text-[10px] text-[#a28c73]">{{ $event->starts_at->timezone('Asia/Tokyo')->translatedFormat('D') }}</p><p class="text-xl font-semibold">{{ $event->starts_at->timezone('Asia/Tokyo')->format('m/d') }}</p><p class="text-xs text-[#80684f]">{{ $deadline ? '~'.$event->starts_at->timezone('Asia/Tokyo')->format('H:i') : $event->starts_at->timezone('Asia/Tokyo')->format('H:i').($event->ends_at ? '〜'.$event->ends_at->timezone('Asia/Tokyo')->format('H:i') : '') }}</p></div><div class="min-w-0"><div class="flex flex-wrap items-center gap-2"><span class="rounded-full border px-2.5 py-1 text-[10px] font-semibold {{ $statusColors[$event->confirmation_status] ?? $statusColors['planned'] }}">{{ $event->confirmation_status === 'confirmed' ? '確定' : '予定' }}</span><span class="rounded-full bg-[#f3eadb] px-2.5 py-1 text-[10px] font-semibold text-[#685442]">{{ $event->selection_type === 'main' ? '本選考' : 'インターン' }}</span><span class="rounded-full px-2.5 py-1 text-[10px] font-semibold {{ $deadline ? 'bg-[#e0f2ef] text-[#00695c]' : 'text-[#80684f]' }}">{{ $typeNames[$event->event_type] ?? 'その他' }}</span></div><h3 class="mt-1 font-semibold {{ $event->is_completed ? 'line-through' : '' }}">{{ $event->company_name ?: '会社未入力' }}@if ($event->title && $event->title !== ($typeNames[$event->event_type] ?? '予定'))<span class="font-normal text-[#80684f]">　{{ $event->title }}</span>@endif</h3>@if ($event->location)<p class="mt-1 text-xs text-[#80684f]">{{ $event->location }}</p>@endif</div></div><div class="flex flex-wrap items-center gap-2">@if (config('services.career_ai.google_calendar_enabled') && auth()->user()->email !== 'demo@career-ai.local' && filled(config('services.google_calendar.client_id')) && filled(config('services.google_calendar.client_secret')))@if (session('calendar_failed_event_id') == $event->getKey())<div role="alert" class="flex flex-wrap items-center gap-2 text-xs text-[#a33]"><span>保存に失敗しました。Googleカレンダーへ移動しますか？</span><a href="{{ route('schedule.google-calendar.fallback', $event) }}" class="rounded-lg border border-[#e8ddce] px-3 py-2 font-semibold text-[#685442] hover:bg-[#f7efe3]">はい</a><button type="button" onclick="this.parentElement.remove()" class="rounded-lg border border-[#e8ddce] px-3 py-2 font-semibold text-[#685442] hover:bg-[#f7efe3]">いいえ</button></div>@elseif ($event->google_calendar_event_id)<form method="POST" action="{{ route('schedule.google-calendar.store', $event) }}">@csrf<button type="submit" class="rounded-lg border border-[#cbd9c4] bg-[#edf3e9] px-3 py-2 text-xs font-semibold text-[#4e704f]">カレンダーに追加済み・更新</button></form>@else<form method="POST" action="{{ route('schedule.google-calendar.store', $event) }}">@csrf<button type="submit" class="rounded-lg border border-[#e8ddce] px-3 py-2 text-xs font-semibold text-[#685442] hover:bg-[#f7efe3]">Googleカレンダーに保存</button></form>@endif @endif<form method="POST" action="{{ route('schedule.completion', $event) }}">@csrf @method('PATCH')<button type="submit" class="rounded-lg border border-[#e8ddce] px-3 py-2 text-xs font-semibold text-[#685442] hover:bg-[#f7efe3]">{{ $event->is_completed ? '未完了に戻す' : '完了' }}</button></form><a href="{{ route('schedule.edit', $event) }}" class="rounded-lg bg-[#31574a] px-3 py-2 text-xs font-semibold text-white hover:bg-[#25483d]">編集</a></div></article>
+        <article data-schedule-event class="flex flex-wrap items-start justify-between gap-4 border-l-4 px-5 py-4 sm:px-6 {{ $deadline ? 'border-l-[#00796b]' : ($event->confirmation_status === 'confirmed' ? 'border-l-[#d50000]' : 'border-l-[#777]') }} {{ $event->is_completed ? 'opacity-60' : '' }}"><div class="flex min-w-0 gap-4"><div class="w-16 shrink-0 text-center"><p class="text-[10px] text-[#a28c73]">{{ $event->starts_at->timezone('Asia/Tokyo')->translatedFormat('D') }}</p><p class="text-xl font-semibold">{{ $event->starts_at->timezone('Asia/Tokyo')->format('m/d') }}</p><p class="text-xs text-[#80684f]">{{ $deadline ? '~'.$event->starts_at->timezone('Asia/Tokyo')->format('H:i') : $event->starts_at->timezone('Asia/Tokyo')->format('H:i').($event->ends_at ? '〜'.$event->ends_at->timezone('Asia/Tokyo')->format('H:i') : '') }}</p></div><div class="min-w-0"><div class="flex flex-wrap items-center gap-2"><span class="rounded-full border px-2.5 py-1 text-[10px] font-semibold {{ $statusColors[$event->confirmation_status] ?? $statusColors['planned'] }}">{{ $event->confirmation_status === 'confirmed' ? '確定' : '予定' }}</span><span class="rounded-full bg-[#f3eadb] px-2.5 py-1 text-[10px] font-semibold text-[#685442]">{{ $event->selection_type === 'main' ? '本選考' : 'インターン' }}</span><span class="rounded-full px-2.5 py-1 text-[10px] font-semibold {{ $deadline ? 'bg-[#e0f2ef] text-[#00695c]' : 'text-[#80684f]' }}">{{ $typeNames[$event->event_type] ?? 'その他' }}</span></div><h3 data-schedule-title class="mt-1 font-semibold {{ $event->is_completed ? 'line-through' : '' }}">{{ $event->company_name ?: '会社未入力' }}@if ($event->title && $event->title !== ($typeNames[$event->event_type] ?? '予定'))<span class="font-normal text-[#80684f]">　{{ $event->title }}</span>@endif</h3>@if ($event->location)<p class="mt-1 text-xs text-[#80684f]">{{ $event->location }}</p>@endif</div></div><div class="flex flex-wrap items-center gap-2">@if (config('services.career_ai.google_calendar_enabled') && auth()->user()->email !== 'demo@career-ai.local' && filled(config('services.google_calendar.client_id')) && filled(config('services.google_calendar.client_secret')))@if (session('calendar_failed_event_id') == $event->getKey())<div role="alert" class="flex flex-wrap items-center gap-2 text-xs text-[#a33]"><span>保存に失敗しました。Googleカレンダーへ移動しますか？</span><a href="{{ route('schedule.google-calendar.fallback', $event) }}" class="rounded-lg border border-[#e8ddce] px-3 py-2 font-semibold text-[#685442] hover:bg-[#f7efe3]">はい</a><button type="button" onclick="this.parentElement.remove()" class="rounded-lg border border-[#e8ddce] px-3 py-2 font-semibold text-[#685442] hover:bg-[#f7efe3]">いいえ</button></div>@elseif ($event->google_calendar_event_id)<form method="POST" action="{{ route('schedule.google-calendar.store', $event) }}">@csrf<button type="submit" class="rounded-lg border border-[#cbd9c4] bg-[#edf3e9] px-3 py-2 text-xs font-semibold text-[#4e704f]">カレンダーに追加済み・更新</button></form>@else<form method="POST" action="{{ route('schedule.google-calendar.store', $event) }}">@csrf<button type="submit" class="rounded-lg border border-[#e8ddce] px-3 py-2 text-xs font-semibold text-[#685442] hover:bg-[#f7efe3]">Googleカレンダーに保存</button></form>@endif @endif<form method="POST" action="{{ route('schedule.completion', $event) }}" data-completion-form>@csrf @method('PATCH')<button type="submit" data-completion-button aria-pressed="{{ $event->is_completed ? 'true' : 'false' }}" class="rounded-lg border border-[#e8ddce] px-3 py-2 text-xs font-semibold text-[#685442] hover:bg-[#f7efe3] disabled:cursor-wait disabled:opacity-60">{{ $event->is_completed ? '未完了に戻す' : '完了' }}</button></form><a href="{{ route('schedule.edit', $event) }}" class="rounded-lg bg-[#31574a] px-3 py-2 text-xs font-semibold text-white hover:bg-[#25483d]">編集</a></div><p data-completion-feedback role="status" aria-live="polite" hidden class="basis-full text-xs font-medium text-[#4e704f]"></p></article>
     @empty
         <div class="px-6 py-12 text-center"><p class="font-semibold">この月の予定はありません</p><a href="{{ route('schedule.create') }}" class="mt-4 inline-flex rounded-xl border border-[#eadfce] px-4 py-2.5 text-sm font-semibold hover:bg-[#f7efe3]">予定を追加する</a></div>
     @endforelse
 </div></section>
 @endsection
+@push('scripts')
+    <script>
+        document.addEventListener('submit', async (event) => {
+            const form = event.target.closest('[data-completion-form]');
+            if (!form) return;
+
+            event.preventDefault();
+
+            const button = form.querySelector('[data-completion-button]');
+            const row = form.closest('[data-schedule-event]');
+            const feedback = row?.querySelector('[data-completion-feedback]');
+
+            if (!button || !row || !feedback || button.disabled) return;
+
+            const originalLabel = button.textContent.trim();
+            button.disabled = true;
+            button.setAttribute('aria-busy', 'true');
+            button.textContent = '保存中…';
+            feedback.hidden = true;
+            feedback.textContent = '';
+
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    headers: { Accept: 'application/json' },
+                    body: new FormData(form),
+                    credentials: 'same-origin',
+                });
+                const result = await response.json();
+
+                if (!response.ok || typeof result.is_completed !== 'boolean') {
+                    throw new Error('Completion update failed');
+                }
+
+                button.textContent = result.is_completed ? '未完了に戻す' : '完了';
+                button.setAttribute('aria-pressed', result.is_completed ? 'true' : 'false');
+                row.classList.toggle('opacity-60', result.is_completed);
+                row.querySelector('[data-schedule-title]')?.classList.toggle('line-through', result.is_completed);
+                feedback.textContent = result.message;
+                feedback.classList.replace('text-[#a33]', 'text-[#4e704f]');
+                feedback.hidden = false;
+            } catch {
+                button.textContent = originalLabel;
+                feedback.textContent = '保存できませんでした。通信状態を確認して、もう一度お試しください。';
+                feedback.classList.replace('text-[#4e704f]', 'text-[#a33]');
+                feedback.hidden = false;
+            } finally {
+                button.disabled = false;
+                button.setAttribute('aria-busy', 'false');
+            }
+        });
+    </script>
+@endpush
