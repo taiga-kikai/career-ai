@@ -291,13 +291,14 @@ class ApplicationManagementPreviewController extends Controller
      * 一覧表示に使う選考状況・詳細・絞り込み値を各応募先から組み立てる。
      *
      * @param  Collection<int, CareerApplication>  $applications
-     * @return array<int, array{id: int, company: string, program: string|null, status: string, statusGroup: string, statusDetail: string|null, filter: string, detail: string|null, resultDate: string|null}>
+     * @return array<int, array{id: int, company: string, program: string|null, status: string, statusGroup: string, statusDetail: string|null, filter: string, detail: string|null, resultDate: string|null, lastUpdatedAt: string|null, lastUpdatedAtIso: string|null}>
      */
     private function viewRows(Collection $applications): array
     {
         return $applications->map(function (CareerApplication $application): array {
             [$statusGroup, $statusDetail] = $this->statusParts($application);
             $status = $statusGroup.($statusDetail !== null ? '（'.$statusDetail.'）' : '');
+            $lastUpdatedAt = ($application->updated_at ?? $application->created_at)?->copy()->timezone('Asia/Tokyo');
 
             return [
                 'id' => $application->id,
@@ -309,6 +310,8 @@ class ApplicationManagementPreviewController extends Controller
                 'filter' => $this->statusFilter($statusGroup, $application->status),
                 'detail' => $application->detail,
                 'resultDate' => $application->result_date?->format('Y-m-d'),
+                'lastUpdatedAt' => $lastUpdatedAt?->format('Y/m/d H:i'),
+                'lastUpdatedAtIso' => $lastUpdatedAt?->toIso8601String(),
             ];
         })->all();
     }

@@ -57,7 +57,7 @@
                             <p class="-mt-2 text-[11px] leading-5 text-[#9b876f]">「応募状況未更新」は、応募したあと結果や次の選考状況のメモがまだない状態です。</p>
                         </div>
 
-                        <div class="mb-3 hidden grid-cols-[minmax(0,1.2fr)_minmax(120px,0.7fr)_minmax(0,1.2fr)] gap-4 px-4 text-[10px] font-semibold tracking-wide text-[#a28c73] sm:grid"><span>企業・コース</span><span>選考状況</span><span>メモ <span class="ml-1 font-normal">· 行を押すと編集</span></span></div>
+                        <div class="mb-3 hidden grid-cols-[minmax(0,1.1fr)_minmax(110px,0.7fr)_minmax(0,1.1fr)_minmax(110px,0.7fr)] gap-4 px-4 text-[10px] font-semibold tracking-wide text-[#a28c73] md:grid"><span>企業・コース</span><span>選考状況</span><span>メモ <span class="ml-1 font-normal">· 行を押すと編集</span></span><span>最終更新</span></div>
                         <div id="application-list" class="max-h-[62vh] divide-y divide-[#eee3d4] overflow-y-auto overscroll-contain pr-1">
                             @foreach ($mainApplications as $application)
                                 @include('partials.application-row', ['application' => $application, 'category' => 'main'])
